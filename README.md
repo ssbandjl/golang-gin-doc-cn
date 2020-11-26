@@ -20,7 +20,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
 
 ## 云原生
 
-更多云原生相关技术干货, 欢迎大家关注我的微信公众号:**云原生云**
+更多云原生相关技术干货, 欢迎大家关注我的微信公众号:[**云原生云**](https://mp.weixin.qq.com/s/QSYPwtG6x20EghKtZHWsVg)
 
 ![云原生云二维码](img/云原生云二维码大.gif)
 
@@ -31,7 +31,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [安装](#installation)
   - [快速开始](#quick-start)
   - [基准测试](#基准测试)
-  - [Gin v1稳定版](#Gin v1稳定版)
+  - [Gin-v1稳定版](#Gin v1稳定版)
   - [使用jsoniter编译](#使用jsoniter编译)
   - [API 示例](#API 示例)
     - [使用GET, POST, PUT, PATCH, DELETE, OPTIONS](#使用GET, POST, PUT, PATCH, DELETE, OPTIONS)
@@ -185,7 +185,7 @@ Gin 使用定制版本的[HttpRouter](https://github.com/julienschmidt/httproute
 
   第(4)列:每个重复任务平均分配内存的次数, 单位allocs/op, 值越低越好
 
-## Gin v1稳定版
+## Gin-v1稳定版
 
 - [x] 零内存分配的路由器
 - [x] 仍然是最快的http路由器和框架
