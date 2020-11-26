@@ -22,7 +22,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
 
 更多云原生相关技术干货, 欢迎大家关注我的微信公众号:云原生云
 
-![云原生云二维码大](/Users/xb/Downloads/公众号/云原生云/二维码/云原生云二维码大.gif)
+![云原生云二维码](img/云原生云二维码大.gif)
 
 ## 内容
 
