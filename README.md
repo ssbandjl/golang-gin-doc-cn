@@ -20,7 +20,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
 
 ## 云原生
 
-更多云原生相关技术干货, 欢迎大家关注我的微信公众号:云原生云
+更多云原生相关技术干货, 欢迎大家关注我的微信公众号:**云原生云**
 
 ![云原生云二维码](img/云原生云二维码大.gif)
 
@@ -30,25 +30,26 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [内容](#内容)
   - [安装](#installation)
   - [快速开始](#quick-start)
-  - [基准测试](#benchmarks)
-  - [Gin v1. stable](#gin-v1-stable)
-  - [Build with jsoniter](#build-with-jsoniter)
-  - [API Examples](#api-examples)
-    - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
-    - [Parameters in path](#parameters-in-path)
-    - [Querystring parameters](#querystring-parameters)
-    - [Multipart/Urlencoded Form](#multiparturlencoded-form)
-    - [Another example: query + post form](#another-example-query--post-form)
-    - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
-    - [Upload files](#upload-files)
-      - [Single file](#single-file)
-      - [Multiple files](#multiple-files)
-    - [Grouping routes](#grouping-routes)
-    - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
-    - [Using middleware](#using-middleware)
-    - [How to write log file](#how-to-write-log-file)
-    - [Custom Log Format](#custom-log-format)
-    - [Controlling Log output coloring](#controlling-log-output-coloring)
+  - [基准测试](#基准测试)
+  - [Gin v1 稳定版](#Gin v1 稳定版)
+  - [使用jsoniter编译](#使用jsoniter编译)
+  - [API 示例](#API 示例)
+    - [使用 GET, POST, PUT, PATCH, DELETE, OPTIONS](#使用 GET, POST, PUT, PATCH, DELETE ,OPTIONS)
+    - [获取请求中的路径参数](#获取请求中的路径参数)
+    - [获取查询字符串参数](#获取查询字符串参数)
+    - [获取Multipart/Urlencoded类型表单](#获取Multipart/Urlencoded类型表单)
+    - [另一个示例: 查询参数 + Post表单](#另一个示例: 查询参数 + Post表单)
+    - [以Map映射作为查询字符串或Post表单参数](#以Map映射作为查询字符串或Post表单参数)
+    - [上传文件](#上传文件)
+      - [单个文件](#单个文件)
+      - [多个文件](#多个文件)
+    - [路由分组](#路由分组)
+    - [Gin引擎初始化(不带中间件或使用日志和异常恢复中间件)](#Gin引擎初始化(不带中间件或使用日志和异常恢复中间件))
+    - [使用中间件](#使用中间件)
+    - [自定义程序崩溃后的处理方式(邮件/微信/短信等告警)](#自定义程序崩溃后的处理方式(邮件/微信/短信等告警))
+    - [怎样记录日志到文件](#怎样记录日志到文件)
+    - [自定义日志格式](#自定义日志格式)
+    - [控制日志输出颜色](#控制日志输出颜色)
     - [Model binding and validation](#model-binding-and-validation)
     - [Custom Validators](#custom-validators)
     - [Only Bind Query String](#only-bind-query-string)
@@ -89,61 +90,55 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [Testing](#testing)
   - [Users](#users)
 
-## Installation
+## 安装
 
-To install Gin package, you need to install Go and set your Go workspace first.
+为了安装Gin包, 你需要先安装Go, 并且设置Go工作空间.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.12+ is required**), then you can use the below Go command to install Gin.
+1. 首先参考[Go官方文档](https://golang.org/)安装Go(版本要求:**Go1.12**及以上), 然后执行以下命令安装Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
 ```
 
-2. Import it in your code:
+2. 导入gin包:
 
 ```go
 import "github.com/gin-gonic/gin"
 ```
 
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+3. (可选)导入net/http包, 如果你要使用其中的常量,比如http.StatusOK,则需要导入
 
 ```go
 import "net/http"
 ```
 
-## Quick start
+## 快速开始
 
 ```sh
-# assume the following codes in example.go file
-$ cat example.go
+编写main.go,写入以下代码并执行go run main.go, 访问http://localhost:8080/ping, 就可以得到响应消息{"message": "pong"}
 ```
 
 ```go
 package main
-
+​
 import "github.com/gin-gonic/gin"
-
+​
 func main() {
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+  r := gin.Default()  //创建默认Gin引擎Engine,内部默认开启了日志和异常恢复中间件
+  r.GET("/ping", func(c *gin.Context) {
+    c.JSON(200, gin.H{
+      "message": "pong",
+    })
+  })
+  r.Run() //默认在localhost:8080监听
 }
 ```
 
-```
-# run example.go and visit 0.0.0.0:8080/ping (for windows "localhost:8080/ping") on browser
-$ go run example.go
-```
+## 基准测试
 
-## Benchmarks
+Gin 使用定制版本的[HttpRouter](https://github.com/julienschmidt/httprouter)
 
-Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter)
-
-[See all benchmarks](/BENCHMARKS.md)
+[查看所有基准测试](/BENCHMARKS.md)
 
 | Benchmark name                 |       (1) |             (2) |          (3) |             (4) |
 | ------------------------------ | ---------:| ---------------:| ------------:| ---------------:|
@@ -178,32 +173,39 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 | BenchmarkTraffic_GithubAll     |       355 |   3478508 ns/op |  820744 B/op | 14114 allocs/op |
 | BenchmarkVulcan_GithubAll      |      6885 |    193333 ns/op |   19894 B/op |   609 allocs/op |
 
-- (1): Total Repetitions achieved in constant time, higher means more confident result
-- (2): Single Repetition Duration (ns/op), lower is better
-- (3): Heap Memory (B/op), lower is better
-- (4): Average Allocations per Repetition (allocs/op), lower is better
+- 测试结果说明:
 
-## Gin v1. stable
+  Benchmark name: 基准测试项
 
-- [x] Zero allocation router.
-- [x] Still the fastest http router and framework. From routing to writing.
-- [x] Complete suite of unit tests.
-- [x] Battle tested.
-- [x] API frozen, new releases will not break your code.
+  第(1)列:在固定时间内完成的重复次数, 值越大性能好
 
-## Build with [jsoniter](https://github.com/json-iterator/go)
+  第(2)列:执行单次重复任务消耗的纳秒数, 单位ns/op, 值越低越好
 
-Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+  第(3)列:执行单次重复任务消耗的堆内存字节数, 单位B/op, 值越低越好
+
+  第(4)列:每个重复任务平均分配内存的次数, 单位allocs/op, 值越低越好
+
+## Gin v1 稳定版
+
+- [x] 零内存分配的路由器
+- [x] 仍然是最快的http路由器和框架
+- [x] 完整的单元测试
+- [x] 严格测试
+- [x] API版本冻结,新发布的版本对你原来的代码兼容
+
+## 使用[jsoniter](https://github.com/json-iterator/go)编译
+
+[jsoniter](https://github.com/json-iterator/go)是一个高性能可以替代Golang标准库encoding/json并且完全兼容的包, Gin默认使用`encoding/json`包,但是你可以使用以下tags修改为jsoniter重新编译源码
 
 ```sh
 $ go build -tags=jsoniter .
 ```
 
-## API Examples
+## API 示例
 
-You can find a number of ready-to-run examples at [Gin examples repository](https://github.com/gin-gonic/examples).
+你可以访问源码, 查看更多接口示例代码 [Gin示例仓库](https://github.com/gin-gonic/examples).
 
-### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
+### 使用 GET, POST, PUT, PATCH, DELETE, OPTIONS
 
 ```go
 func main() {
@@ -226,75 +228,86 @@ func main() {
 }
 ```
 
-### Parameters in path
+### 获取请求中的路径参数
 
 ```go
 func main() {
-	router := gin.Default()
-
-	// This handler will match /user/john but will not match /user/ or /user
-	router.GET("/user/:name", func(c *gin.Context) {
-		name := c.Param("name")
-		c.String(http.StatusOK, "Hello %s", name)
-	})
-
-	// However, this one will match /user/john/ and also /user/john/send
-	// If no other routers match /user/john, it will redirect to /user/john/
-	router.GET("/user/:name/*action", func(c *gin.Context) {
-		name := c.Param("name")
-		action := c.Param("action")
-		message := name + " is " + action
-		c.String(http.StatusOK, message)
-	})
-
-	// For each matched request Context will hold the route definition
-	router.POST("/user/:name/*action", func(c *gin.Context) {
-		c.FullPath() == "/user/:name/*action" // true
-	})
-
-	router.Run(":8080")
+  router := gin.Default()
+​
+  // This handler will match /user/john but will not match /user/ or /user
+  //以下路由只会匹配/user/用户名, 不会匹配/user/或者/user
+  router.GET("/user/:name", func(c *gin.Context) {
+    name := c.Param("name") //使用Param方法从路径中获取参数
+    c.String(http.StatusOK, "Hello %s", name)
+  })
+​
+  // However, this one will match /user/john/ and also /user/john/send
+  // If no other routers match /user/john, it will redirect to /user/john/
+  // 以下带冒号:和带星号*组成的路由可以匹配/user/用户名/或/user/用户名/动作,如果/user/用户名没有匹配到其他路由,它会自动重定向到/user/用户名/进行匹配
+  router.GET("/user/:name/*action", func(c *gin.Context) {
+    name := c.Param("name")
+    action := c.Param("action")
+    message := name + " is " + action
+    c.String(http.StatusOK, message)
+  })
+​
+  // For each matched request Context will hold the route definition
+  // 请求上下文request Context会保存所有匹配上的路由定义到c.FullPath()方法
+  router.POST("/user/:name/*action", func(c *gin.Context) {
+    c.FullPath() == "/user/:name/*action" // true
+  })
+​
+  router.Run(":8080")
 }
 ```
 
-### Querystring parameters
+### 获取查询字符串参数
 
 ```go
 func main() {
-	router := gin.Default()
-
-	// Query string parameters are parsed using the existing underlying request object.
-	// The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe
-	router.GET("/welcome", func(c *gin.Context) {
-		firstname := c.DefaultQuery("firstname", "Guest")
-		lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
-
-		c.String(http.StatusOK, "Hello %s %s", firstname, lastname)
-	})
-	router.Run(":8080")
+  router := gin.Default()
+​
+  // Query string parameters are parsed using the existing underlying request object.
+  // The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe
+  // 发送测试请求:/welcome?firstname=Jane&lastname=Doe
+  router.GET("/welcome", func(c *gin.Context) {
+    firstname := c.DefaultQuery("firstname", "Guest") //如果没有获取到该键值,则使用第二个参数作为默认值
+    lastname := c.Query("lastname") 
+    //上一行的完整写法:c.Request.URL.Query().Get("lastname")
+​
+    c.String(http.StatusOK, "Hello %s %s", firstname, lastname)
+  })
+  router.Run(":8080")
 }
 ```
 
-### Multipart/Urlencoded Form
+### 获取Multipart/Urlencoded类型表单
 
 ```go
+package main
+​
+import "github.com/gin-gonic/gin"
+​
 func main() {
-	router := gin.Default()
-
-	router.POST("/form_post", func(c *gin.Context) {
-		message := c.PostForm("message")
-		nick := c.DefaultPostForm("nick", "anonymous")
-
-		c.JSON(200, gin.H{
-			"status":  "posted",
-			"message": message,
-			"nick":    nick,
-		})
-	})
-	router.Run(":8080")
+  router := gin.Default()
+​
+  // 模拟提交表单:curl -XPOST http://localhost:8080/form_post -d "message=消息&nick=昵称"
+  router.POST("/form_post", func(c *gin.Context) {
+    message := c.PostForm("message")
+    nick := c.DefaultPostForm("nick", "anonymous")
+​
+    c.JSON(200, gin.H{
+      "status":  "posted",
+      "message": message,
+      "nick":    nick,
+    })
+  })
+  router.Run(":8080")
 }
+//返回结果: {"message":"消息","nick":"昵称","status":"posted"}
 ```
 
-### Another example: query + post form
+### 另一个示例: 查询参数 + Post表单
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
@@ -304,19 +317,32 @@ name=manu&message=this_is_great
 ```
 
 ```go
+package main
+​
+import (
+  "fmt"
+  "github.com/gin-gonic/gin"
+)
+​
 func main() {
-	router := gin.Default()
-
-	router.POST("/post", func(c *gin.Context) {
-
-		id := c.Query("id")
-		page := c.DefaultQuery("page", "0")
-		name := c.PostForm("name")
-		message := c.PostForm("message")
-
-		fmt.Printf("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
-	})
-	router.Run(":8080")
+  router := gin.Default()
+​
+  router.POST("/post", func(c *gin.Context) {
+​
+    id := c.Query("id")
+    page := c.DefaultQuery("page", "0")
+    name := c.PostForm("name")
+    message := c.PostForm("message")
+​
+    fmt.Printf("id: %s; page: %s; name: %s; message: %s\n", id, page, name, message)
+    c.JSON(200, gin.H{
+      "id": id,
+      "page": page,
+      "name": name,
+      "message": message,
+    })
+  })
+  router.Run(":8080")
 }
 ```
 
@@ -324,7 +350,7 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Map as querystring or postform parameters
+### 以Map映射作为查询字符串或Post表单参数
 
 ```
 POST /post?ids[a]=1234&ids[b]=hello HTTP/1.1
@@ -335,138 +361,163 @@ names[first]=thinkerou&names[second]=tianou
 
 ```go
 func main() {
-	router := gin.Default()
-
-	router.POST("/post", func(c *gin.Context) {
-
-		ids := c.QueryMap("ids")
-		names := c.PostFormMap("names")
-
-		fmt.Printf("ids: %v; names: %v", ids, names)
-	})
-	router.Run(":8080")
+  router := gin.Default()
+​
+  router.POST("/post", func(c *gin.Context) {
+​
+    ids := c.QueryMap("ids")  //获取查询参数中的Map
+    names := c.PostFormMap("names")   //获取Post表单中的Map
+​
+    fmt.Printf("ids: %v; names: %v\n", ids, names)
+  })
+  router.Run(":8080")
 }
 ```
 
 ```
-ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
+模拟请求:
+curl -XPOST http://localhost:8080/post?ids[a]=1234&ids[b]=hello -d "names[first]=thinkerou&names[second]=tianou"
+打印结果:
+ids: map[a:1234 b:hello]; names: map[first:thinkerou second:tianou]
 ```
 
-### Upload files
+### 上传文件
 
-#### Single file
+#### 单个文件
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/single).
+参考问题 [#774](https://github.com/gin-gonic/gin/issues/774),  [示例代码](https://github.com/gin-gonic/examples/tree/master/upload-file/single).
 
-`file.Filename` **SHOULD NOT** be trusted. See [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) and [#1693](https://github.com/gin-gonic/gin/issues/1693)
+文件名`file.Filename` 中带路径是不可信赖的, 参考 [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) 和问题 [#1693](https://github.com/gin-gonic/gin/issues/1693)
 
-> The filename is always optional and must not be used blindly by the application: path information should be stripped, and conversion to the server file system rules should be done.
+> 文件名必须是安全可信赖的, 需要去掉路径信息,保留文件名即可
+
+```go
+package main
+​
+import (
+  "fmt"
+  "github.com/gin-gonic/gin"
+  "log"
+  "net/http"
+  "os"
+)
+​
+func main() {
+  router := gin.Default()
+  // Set a lower memory limit for multipart forms (default is 32 MiB)
+  // 设置请求表单最大内存限制,默认是30MB
+​
+  //内部调用http请求的ParseMultipartForm方法,该方法要求传入一个字节数, 要取MultipartForm字段的数据，先使用ParseMultipartForm()方法解析Form，解析时会读取所有数据，但需要指定保存在内存中的最大字节数，剩余的字节数会保存在临时磁盘文件中
+  maxMultipartMemory := int64(8 << 20)
+  log.Printf("解析文件到内存的最大字节:%d", maxMultipartMemory)
+  router.MaxMultipartMemory = maxMultipartMemory  // 8 MiB
+  router.POST("/upload", func(c *gin.Context) {
+    // single file
+    file, _ := c.FormFile("file")  //FormFile从表单中返回第一个匹配到的文件对象(结构)
+    log.Printf("获取到的文件名:%s", file.Filename)  //文件名必须是安全可信耐的,需要去掉路径信息,保留文件名即可
+​
+    // Upload the file to specific dst.
+    currentPath, _ := os.Getwd()  //获取当前文件路径
+    dst := currentPath + "/" + file.Filename
+    log.Printf("保存文件绝对路径:%s", dst)
+    c.SaveUploadedFile(file, dst)
+​
+    c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
+  })
+  router.Run(":8080")
+}
+​
+//模拟单文件上传:
+//curl -X POST http://localhost:8080/upload  -H "Content-Type: multipart/form-data" -F "file=@文件名"
+```
+
+#### 多个文件
+
+ [完整示例代码](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
+
+```go
+package main
+​
+import (
+  "fmt"
+  "github.com/gin-gonic/gin"
+  "log"
+  "net/http"
+  "os"
+)
+​
+func main() {
+  router := gin.Default()
+  // Set a lower memory limit for multipart forms (default is 32 MiB)
+  // 设置请求表单最大内存限制,默认是30MB
+  //内部调用http请求的ParseMultipartForm方法,该方法要求传入一个字节数, 要取MultipartForm字段的数据，先使用ParseMultipartForm()方法解析Form，解析时会读取所有数据，但需要指定保存在内存中的最大字节数，剩余的字节数会保存在临时磁盘文件中
+  maxMultipartMemory := int64(8 << 20)
+  log.Printf("解析文件到内存的最大字节:%d", maxMultipartMemory)
+  router.MaxMultipartMemory = maxMultipartMemory  // 8 MiB
+  router.POST("/upload", func(c *gin.Context) {
+    // Upload the file to specific dst.
+    currentPath, _ := os.Getwd()  //获取当前文件路径
+    // Multipart form
+    form, _ := c.MultipartForm() //多文件表单
+    files := form.File["upload[]"] //通过前端提供的键名获取文件数组
+    for _, file := range files {
+      dst := currentPath + "/" + file.Filename
+      log.Printf("保存文件绝对路径:%s", dst)
+      // Upload the file to specific dst.
+      c.SaveUploadedFile(file, dst)
+    }
+    c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
+  })
+  router.Run(":8080")
+}
+​
+//模拟多文件上传
+//curl -X POST http://localhost:8080/upload -H "Content-Type: multipart/form-data" -F "upload[]=@文件1" -F "upload[]=@文件2"
+```
+
+### 路由分组
+
+路由分组可用于新老接口兼容, 针对不同分组的路由使用不同的中间件处理逻辑等
 
 ```go
 func main() {
-	router := gin.Default()
-	// Set a lower memory limit for multipart forms (default is 32 MiB)
-	router.MaxMultipartMemory = 8 << 20  // 8 MiB
-	router.POST("/upload", func(c *gin.Context) {
-		// single file
-		file, _ := c.FormFile("file")
-		log.Println(file.Filename)
-
-		// Upload the file to specific dst.
-		c.SaveUploadedFile(file, dst)
-
-		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
-	})
-	router.Run(":8080")
+  router := gin.Default()
+  // Simple group: v1  路由分组1
+  v1 := router.Group("/v1")
+  {
+    v1.POST("/login", loginEndpoint)
+    v1.POST("/submit", submitEndpoint)
+    v1.POST("/read", readEndpoint)
+  }
+  // Simple group: v2  路由分组2
+  v2 := router.Group("/v2")
+  {
+    v2.POST("/login", loginEndpoint)
+    v2.POST("/submit", submitEndpoint)
+    v2.POST("/read", readEndpoint)
+  }
+  router.Run(":8080")
 }
 ```
 
-How to `curl`:
+### Gin引擎初始化(不带中间件或使用日志和异常恢复中间件)
 
-```bash
-curl -X POST http://localhost:8080/upload \
-  -F "file=@/Users/appleboy/test.zip" \
-  -H "Content-Type: multipart/form-data"
-```
-
-#### Multiple files
-
-See the detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
-
-```go
-func main() {
-	router := gin.Default()
-	// Set a lower memory limit for multipart forms (default is 32 MiB)
-	router.MaxMultipartMemory = 8 << 20  // 8 MiB
-	router.POST("/upload", func(c *gin.Context) {
-		// Multipart form
-		form, _ := c.MultipartForm()
-		files := form.File["upload[]"]
-
-		for _, file := range files {
-			log.Println(file.Filename)
-
-			// Upload the file to specific dst.
-			c.SaveUploadedFile(file, dst)
-		}
-		c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
-	})
-	router.Run(":8080")
-}
-```
-
-How to `curl`:
-
-```bash
-curl -X POST http://localhost:8080/upload \
-  -F "upload[]=@/Users/appleboy/test1.zip" \
-  -F "upload[]=@/Users/appleboy/test2.zip" \
-  -H "Content-Type: multipart/form-data"
-```
-
-### Grouping routes
-
-```go
-func main() {
-	router := gin.Default()
-
-	// Simple group: v1
-	v1 := router.Group("/v1")
-	{
-		v1.POST("/login", loginEndpoint)
-		v1.POST("/submit", submitEndpoint)
-		v1.POST("/read", readEndpoint)
-	}
-
-	// Simple group: v2
-	v2 := router.Group("/v2")
-	{
-		v2.POST("/login", loginEndpoint)
-		v2.POST("/submit", submitEndpoint)
-		v2.POST("/read", readEndpoint)
-	}
-
-	router.Run(":8080")
-}
-```
-
-### Blank Gin without middleware by default
-
-Use
+New()方法得到一个不使用任何中间件的Gin引擎Engine对象r
 
 ```go
 r := gin.New()
 ```
 
-instead of
+默认方法Default()使用Logger(日志记录器)和Recovery(异常自恢复)中间件
 
 ```go
 // Default With the Logger and Recovery middleware already attached
+// 默认方法使用Logger(日志记录器)和Recovery(异常自恢复)中间件
 r := gin.Default()
 ```
 
 
-### Using middleware
+### 使用中间件
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -474,13 +525,16 @@ func main() {
 
 	// Global middleware
 	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
+  // Logger日志中间件会将日志写到Gin默认写出器(标准输出),即使开启了release模式
 	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
 
 	// Recovery middleware recovers from any panics and writes a 500 if there was one.
+  // Recovery异常恢复中间件会在程序崩溃时恢复程序,返回状态码为500的错误
 	r.Use(gin.Recovery())
 
 	// Per route middleware, you can add as many as you desire.
+  // 你可以针对每个路由添加需要的中间件
 	r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 
 	// Authorization group
@@ -489,6 +543,7 @@ func main() {
 	authorized := r.Group("/")
 	// per group middleware! in this case we use the custom created
 	// AuthRequired() middleware just in the "authorized" group.
+  // 也可以针对路由分组添加统一的中间件
 	authorized.Use(AuthRequired())
 	{
 		authorized.POST("/login", loginEndpoint)
@@ -496,6 +551,7 @@ func main() {
 		authorized.POST("/read", readEndpoint)
 
 		// nested group
+    // 嵌套路由组
 		testing := authorized.Group("testing")
 		testing.GET("/analytics", analyticsEndpoint)
 	}
@@ -505,103 +561,161 @@ func main() {
 }
 ```
 
-### Custom Recovery behavior
+### 自定义程序崩溃后的处理方式(邮件/微信/短信等告警)
 ```go
+package main
+​
+import (
+  "fmt"
+  "github.com/gin-gonic/gin"
+  "log"
+  "net/http"
+)
+​
+func CustomRecovery() gin.HandlerFunc {
+  return func(c *gin.Context) {
+    defer func() {
+      //if r := recover(); r != nil {
+      //  log.Printf("崩溃信息:%s", r)
+      //}
+​
+      if err, ok := recover().(string); ok {
+        log.Printf("您可以在这里完成告警任务,邮件,微信等告警")
+        c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
+      }
+      c.AbortWithStatus(http.StatusInternalServerError)
+    }()
+    c.Next()
+  }
+}
+​
 func main() {
-	// Creates a router without any middleware by default
-	r := gin.New()
+  // Creates a router without any middleware by default
+  r := gin.New()
+​
+  // Global middleware
+  // Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
+  // By default gin.DefaultWriter = os.Stdout
+  r.Use(gin.Logger())
+​
+  // Recovery middleware recovers from any panics and writes a 500 if there was one.
+  //r.Use(CustomRecovery())  //使用自定义中间件处理程序崩溃
+​
+  //使用匿名函数组成中间件,处理程序崩溃
+  r.Use(func( c *gin.Context){
+    defer func() {
+      if err, ok := recover().(string); ok {
+        log.Printf("您可以在这里完成告警任务,邮件,微信等告警")
+        c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
+      }
+      c.AbortWithStatus(http.StatusInternalServerError)
+    }()
+    c.Next()
+  })
+​
+  r.GET("/panic", func(c *gin.Context) {
+    // panic with a string -- the custom middleware could save this to a database or report it to the user
+    panic("程序崩溃")
+  })
+​
+  r.GET("/", func(c *gin.Context) {
+    c.String(http.StatusOK, "ohai")
+  })
+​
+  // Listen and serve on 0.0.0.0:8080
+  r.Run(":8080")
+}
+//模拟程序崩溃: curl http://localhost:8080/panic
+```
 
-	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
-	// By default gin.DefaultWriter = os.Stdout
-	r.Use(gin.Logger())
+### 怎样记录日志到文件
 
-	// Recovery middleware recovers from any panics and writes a 500 if there was one.
-	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		if err, ok := recovered.(string); ok {
-			c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
-		}
-		c.AbortWithStatus(http.StatusInternalServerError)
-	}))
+利用io.MultiWriter多写出器可以实现日志记录到文件的同时也输出到控制台
 
-	r.GET("/panic", func(c *gin.Context) {
-		// panic with a string -- the custom middleware could save this to a database or report it to the user
-		panic("foo")
-	})
-
-	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "ohai")
-	})
-
-	// Listen and serve on 0.0.0.0:8080
-	r.Run(":8080")
+```go
+package main
+​
+import (
+  "github.com/gin-gonic/gin"
+  "io"
+  "os"
+)
+​
+func main() {
+  // Disable Console Color, you don't need console color when writing the logs to file.
+  // 禁用控制台日志颜色,日志写到文件的时候,不需要打开控制台日志颜色
+  gin.DisableConsoleColor()
+  // Logging to a file.  新建日志文件,得到文件结构,文件结构实现了写出器Writer接口
+  f, _ := os.Create("gin.log")
+  //io.MultiWriter(多写出器方法)创建一个写出器, 将传入的多个写出器追加为一个写出器数组, 得到的写出器实现了Writer接口, 它会将需要写出的数据写出到每个写出器, 就像Unix命令tee,会将数据写入文件的同时打印到标准输出
+  //配置Gin默认日志写出器为得到的多写出器
+  gin.DefaultWriter = io.MultiWriter(f)
+  // Use the following code if you need to write the logs to file and console at the same time.
+  // 使用下面的代码,将日志写入文件的同时,也输出到控制台
+  // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+​
+  router := gin.Default()
+  router.GET("/ping", func(c *gin.Context) {
+    c.String(200, "pong")
+  })
+​
+  router.Run(":8080")
 }
 ```
 
-### How to write log file
+### 自定义日志格式
 ```go
+package main
+​
+import (
+  "fmt"
+  "github.com/gin-gonic/gin"
+  "time"
+)
+​
 func main() {
-    // Disable Console Color, you don't need console color when writing the logs to file.
-    gin.DisableConsoleColor()
-
-    // Logging to a file.
-    f, _ := os.Create("gin.log")
-    gin.DefaultWriter = io.MultiWriter(f)
-
-    // Use the following code if you need to write the logs to file and console at the same time.
-    // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
-
-    router := gin.Default()
-    router.GET("/ping", func(c *gin.Context) {
-        c.String(200, "pong")
-    })
-
-    router.Run(":8080")
+  router := gin.New()
+​
+  // LoggerWithFormatter middleware will write the logs to gin.DefaultWriter
+  // By default gin.DefaultWriter = os.Stdout
+  // type LogFormatter func(params LogFormatterParams) string 这里的LogFormatterParams是一个格式化日志参数的结构体
+  router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+    // your custom format
+    // 127.0.0.1 - [Sun, 22 Nov 2020 17:09:53 CST] "GET /ping HTTP/1.1 200 56.113µs "curl/7.64.1" "
+    return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+      param.ClientIP,                       //请求客户端的IP地址
+      param.TimeStamp.Format(time.RFC1123), //请求时间
+      param.Method,                         //请求方法
+      param.Path,                           //路由路径
+      param.Request.Proto,                  //请求协议
+      param.StatusCode,                     //http响应码
+      param.Latency,                        //请求到响应的延时
+      param.Request.UserAgent(),            //客户端代理程序
+      param.ErrorMessage,                   //如果有错误,也打印错误信息
+    )
+  }))
+  router.Use(gin.Recovery())
+​
+  router.GET("/ping", func(c *gin.Context) {
+    c.String(200, "pong")
+  })
+​
+  router.Run(":8080")
 }
+//模拟请求测试: curl http://localhost:8080/ping
 ```
 
-### Custom Log Format
-```go
-func main() {
-	router := gin.New()
+**参考输出**
 
-	// LoggerWithFormatter middleware will write the logs to gin.DefaultWriter
-	// By default gin.DefaultWriter = os.Stdout
-	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-
-		// your custom format
-		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-				param.ClientIP,
-				param.TimeStamp.Format(time.RFC1123),
-				param.Method,
-				param.Path,
-				param.Request.Proto,
-				param.StatusCode,
-				param.Latency,
-				param.Request.UserAgent(),
-				param.ErrorMessage,
-		)
-	}))
-	router.Use(gin.Recovery())
-
-	router.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
-	})
-
-	router.Run(":8080")
-}
-```
-
-**Sample Output**
 ```
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
-### Controlling Log output coloring 
+### 控制日志输出颜色 
 
-By default, logs output on console should be colorized depending on the detected TTY.
+默认情况, 日志输出到控制台的颜色取决于使用的虚拟终端TTY的颜色方案.
 
-Never colorize logs: 
+禁用日志颜色: 
 
 ```go
 func main() {
@@ -620,7 +734,7 @@ func main() {
 }
 ```
 
-Always colorize logs: 
+打开日志颜色:
 
 ```go
 func main() {
@@ -637,6 +751,7 @@ func main() {
     
     router.Run(":8080")
 }
+//模拟请求测试: curl http://localhost:8080/ping
 ```
 
 ### Model binding and validation
