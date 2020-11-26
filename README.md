@@ -50,14 +50,14 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
     - [怎样记录日志到文件](#怎样记录日志到文件)
     - [自定义日志格式](#自定义日志格式)
     - [控制日志输出颜色](#控制日志输出颜色)
-    - [Model binding and validation](#model-binding-and-validation)
-    - [Custom Validators](#custom-validators)
-    - [Only Bind Query String](#only-bind-query-string)
-    - [Bind Query String or Post Data](#bind-query-string-or-post-data)
-    - [Bind Uri](#bind-uri)
-    - [Bind Header](#bind-header)
-    - [Bind HTML checkboxes](#bind-html-checkboxes)
-    - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
+    - [模型绑定和验证](#模型绑定和验证)
+    - [自定义验证器](#自定义验证器)
+    - [只绑定查询字符串](#只绑定查询字符串)
+    - [绑定查询字符串或Post表单数据](#绑定查询字符串或Post表单数据)
+    - [绑定URI](#绑定URI)
+    - [绑定请求头](#绑定请求头)
+    - [绑定HTML复选框](#绑定HTML复选框)
+    - [绑定Multipart/Urlencoded类型的表单](#绑定Multipart/Urlencoded类型的表单)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
       - [SecureJSON](#securejson)
       - [JSONP](#jsonp)
@@ -754,96 +754,110 @@ func main() {
 //模拟请求测试: curl http://localhost:8080/ping
 ```
 
-### Model binding and validation
+### 模型绑定和验证
 
-To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML and standard form values (foo=bar&boo=baz).
+使用模型绑定来绑定请求体到一个Go类型上. 目前支持JSON,XML,YAML以及标准表单(如foo=bar&boo=baz)的绑定.
 
-Gin uses [**go-playground/validator/v10**](https://github.com/go-playground/validator) for validation. Check the full docs on tags usage [here](https://godoc.org/github.com/go-playground/validator#hdr-Baked_In_Validators_and_Tags).
+Gin使用[**go-playground/validator/v10**](https://github.com/go-playground/validator)包来验证请求, 关于tags在验证中使用详见[Tags](https://godoc.org/github.com/go-playground/validator#hdr-Baked_In_Validators_and_Tags)
 
-Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
+注意:绑定前请确认结构体中需要绑定的字段标签与绑定类型一致,比如绑定JSON,设置标签:` json:"fieldname"`
 
-Also, Gin provides two sets of methods for binding:
-- **Type** - Must bind
-  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`, `BindHeader`
-  - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
-- **Type** - Should bind
-  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`, `ShouldBindHeader`
-  - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
+Gin提供两种方式(类型)来完成绑定:
 
-When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
+- **方式一** - Must bind
+  - **方法** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`, `BindHeader`
+  - **特点** - 这些方法底层使用`MustBindWith`方法. 如果出现绑定错误, 请求将以状态码400返回失败信息:`c.AbortWithError(400, err).SetType(ErrorTypeBind)`, 响应中设置Content-Type头为text/plain; charset=utf-8.如果手动设置响应码,会警告响应头已经设置,比如提示: `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`, 如果想要更好的控制这些行为,建议使用下面对应的ShoudBind方法.
+- **方式二** - Should bind
+  - **方法** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`, `ShouldBindHeader`
+  - **特点** - 这些方法底层使用`ShouldBindWith`. 如果出现绑定错误, 会返回错误, 开发者可以控制和恰当的处理这些错误.
 
-You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, an error will be returned.
+当使用绑定方法时, Gin尝试根据类型头`Content-Type header`自动推断要使用的绑定器. 如果你已经确认需要绑定的类型,可以直接使用底层的`MustBindWith`或`ShouldBindWith`方法.
+
+你也可以针对特殊的字段指定required标签值, 如果某个字段指定了:`binding:"required"`标签, 但是在绑定时该字段为空会返回错误.
+
+如以下代码绑定JSON:
 
 ```go
+package main
+​
+import (
+  "github.com/gin-gonic/gin"
+  "net/http"
+)
+​
 // Binding from JSON
 type Login struct {
-	User     string `form:"user" json:"user" xml:"user"  binding:"required"`
-	Password string `form:"password" json:"password" xml:"password" binding:"required"`
+  User string `form:"user" json:"user" xml:"user"  binding:"required"` //分别定义form,json,xml,binding等标签
+  //Password string `form:"password" json:"password" xml:"password" binding:"required"`
+  Password string `form:"password" json:"password" xml:"password" binding:"-"`
 }
-
+​
 func main() {
-	router := gin.Default()
-
-	// Example for binding JSON ({"user": "manu", "password": "123"})
-	router.POST("/loginJSON", func(c *gin.Context) {
-		var json Login
-		if err := c.ShouldBindJSON(&json); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		
-		if json.User != "manu" || json.Password != "123" {
-			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-			return
-		} 
-		
-		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-	})
-
-	// Example for binding XML (
-	//	<?xml version="1.0" encoding="UTF-8"?>
-	//	<root>
-	//		<user>user</user>
-	//		<password>123</password>
-	//	</root>)
-	router.POST("/loginXML", func(c *gin.Context) {
-		var xml Login
-		if err := c.ShouldBindXML(&xml); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		
-		if xml.User != "manu" || xml.Password != "123" {
-			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-			return
-		} 
-		
-		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-	})
-
-	// Example for binding a HTML form (user=manu&password=123)
-	router.POST("/loginForm", func(c *gin.Context) {
-		var form Login
-		// This will infer what binder to use depending on the content-type header.
-		if err := c.ShouldBind(&form); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		
-		if form.User != "manu" || form.Password != "123" {
-			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-			return
-		} 
-		
-		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-	})
-
-	// Listen and serve on 0.0.0.0:8080
-	router.Run(":8080")
+  router := gin.Default()
+​
+  // Example for binding JSON ({"user": "manu", "password": "123"})
+  router.POST("/loginJSON", func(c *gin.Context) {
+    var json Login
+    if err := c.ShouldBindJSON(&json); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
+​
+    if json.User != "manu" || json.Password != "123" {
+      c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+      return
+    }
+​
+    c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+  })
+​
+  // Example for binding XML (
+  //  <?xml version="1.0" encoding="UTF-8"?>
+  //  <root>
+  //    <user>user</user>
+  //    <password>123</password>
+  //  </root>)
+  router.POST("/loginXML", func(c *gin.Context) {
+    var xml Login
+    if err := c.ShouldBindXML(&xml); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
+​
+    if xml.User != "manu" || xml.Password != "123" {
+      c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+      return
+    }
+​
+    c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+  })
+​
+  // Example for binding a HTML form (user=manu&password=123)
+  router.POST("/loginForm", func(c *gin.Context) {
+    var form Login
+    // This will infer what binder to use depending on the content-type header.
+    if err := c.ShouldBind(&form); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
+​
+    if form.User != "manu" || form.Password != "123" {
+      c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+      return
+    }
+​
+    c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+  })
+​
+  // Listen and serve on 0.0.0.0:8080
+  router.Run(":8080")
 }
+​
+//模拟请求: curl -v -X POST http://localhost:8080/loginJSON -H 'content-type: application/json' -d '{ "user": "manu", "password": "123" }'
 ```
 
-**Sample request**
+**请求示例**
+
 ```shell
 $ curl -v -X POST \
   http://localhost:8080/loginJSON \
@@ -865,62 +879,82 @@ $ curl -v -X POST \
 {"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
 
-**Skip validate**
+**跳过验证**
 
-When running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
+跳过验证: 与`binding:"required"`标签对应的是`binding:"-"`, 表示该字段不做绑定, 所以绑定时该字段为空不会报错.
 
-### Custom Validators
 
-It is also possible to register custom validators. See the [example code](https://github.com/gin-gonic/examples/tree/master/custom-validation/server.go).
+
+### 自定义验证器
+
+你也可以自己注册一个自定义验证器,  [示例代码](https://github.com/gin-gonic/examples/tree/master/custom-validation/server.go).
 
 ```go
 package main
-
+​
 import (
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
+  "net/http"
+  "time"
+​
+  "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/binding"
+  "github.com/go-playground/validator/v10"
 )
-
+​
 // Booking contains binded and validated data.
+// Booking结构中定义了包含绑定器和日期验证器标签
 type Booking struct {
-	CheckIn  time.Time `form:"check_in" binding:"required,bookabledate" time_format:"2006-01-02"`
-	CheckOut time.Time `form:"check_out" binding:"required,gtfield=CheckIn" time_format:"2006-01-02"`
+  CheckIn  time.Time `form:"check_in" binding:"required,bookabledate" time_format:"2006-01-02"`  //登记时间
+  CheckOut time.Time `form:"check_out" binding:"required,gtfield=CheckIn" time_format:"2006-01-02"`  //gtfield=CheckIn表示结账时间必须大于登记时间
 }
-
+​
+// 定义日期验证器
 var bookableDate validator.Func = func(fl validator.FieldLevel) bool {
-	date, ok := fl.Field().Interface().(time.Time)
-	if ok {
-		today := time.Now()
-		if today.After(date) {
-			return false
-		}
-	}
-	return true
+  date, ok := fl.Field().Interface().(time.Time)  //利用反射获取到字段值 -> 转为接口 -> 类型断言(时间类型)
+  if ok {
+    today := time.Now()
+    if today.After(date) {  //如果当前时间在checkIn字段时间之后,返回false,即登记时间不能早于当前的时间
+      return false
+    }
+  }
+  return true
 }
-
+​
 func main() {
-	route := gin.Default()
-
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("bookabledate", bookableDate)
-	}
-
-	route.GET("/bookable", getBookable)
-	route.Run(":8085")
+  route := gin.Default()
+  //对binding.Validator.Engine()接口进行类型断言,断言类型为Validate结构,如果断言成功,就将自定义的验证器注册到Gin内部
+  if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+    // - if the key already exists, the previous validation function will be replaced. 该注册方法会将已经存在的验证器替换
+    // - this method is not thread-safe it is intended that these all be registered prior to any validation
+    // 注册方法不是线程安全的, 在验证开始前,需要保证所有的验证器都注册成功
+    v.RegisterValidation("bookabledate", bookableDate)
+  }
+​
+  route.GET("/bookable", getBookable)
+  route.Run(":8085")
 }
-
+​
 func getBookable(c *gin.Context) {
-	var b Booking
-	if err := c.ShouldBindWith(&b, binding.Query); err == nil {
-		c.JSON(http.StatusOK, gin.H{"message": "Booking dates are valid!"})
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	}
+  var b Booking
+  if err := c.ShouldBindWith(&b, binding.Query); err == nil {
+    c.JSON(http.StatusOK, gin.H{"message": "Booking dates are valid!"})
+  } else {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+  }
 }
+​
+//模拟请求:
+// 登记时间和结账时间符合条件
+//$ curl "localhost:8085/bookable?check_in=2030-04-16&check_out=2030-04-17"
+//{"message":"Booking dates are valid!"}
+//
+// 登记时间在结账时间之后, 不满足gtfield校验规则
+//$ curl "localhost:8085/bookable?check_in=2030-03-10&check_out=2030-03-09"
+//{"error":"Key: 'Booking.CheckOut' Error:Field validation for 'CheckOut' failed on the 'gtfield' tag"}
+//
+// 登记时间在当前时间之前,不满足自定义的验证器
+//$ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
+//{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%
 ```
 
 ```console
@@ -934,88 +968,107 @@ $ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%    
 ```
 
-[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
-See the [struct-lvl-validation example](https://github.com/gin-gonic/examples/tree/master/struct-lvl-validations) to learn more.
+另外[结构体级别的验证](https://github.com/go-playground/validator/releases/tag/v8.7)采用如下的方式注册, v.RegisterStructValidation(UserStructLevelValidation, User{}),  请参考[结构体级别验证示例](https://github.com/gin-gonic/examples/tree/master/struct-lvl-validations)
 
-### Only Bind Query String
 
-`ShouldBindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
+
+### 只绑定查询字符串
+
+使用`SholdBindQuery`方法只绑定查询参数, 而不会绑定post的数据. 请参[详情](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
 
 ```go
 package main
-
+​
 import (
-	"log"
-
-	"github.com/gin-gonic/gin"
+  "log"
+​
+  "github.com/gin-gonic/gin"
 )
-
+​
 type Person struct {
-	Name    string `form:"name"`
-	Address string `form:"address"`
+  Name    string `form:"name"`
+  Address string `form:"address"`
 }
-
+​
 func main() {
-	route := gin.Default()
-	route.Any("/testing", startPage)
-	route.Run(":8085")
+  route := gin.Default()
+  route.Any("/testing", startPage)
+  route.Run(":8085")
 }
-
+​
 func startPage(c *gin.Context) {
-	var person Person
-	if c.ShouldBindQuery(&person) == nil {
-		log.Println("====== Only Bind By Query String ======")
-		log.Println(person.Name)
-		log.Println(person.Address)
-	}
-	c.String(200, "Success")
+  var person Person
+  // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query)
+  // ShouldBindQuery是c.ShouldBindWith(obj, binding.Query)方法的一个快捷绑定方法, 该方法只绑定请求字符串query string,而忽略Post提交的表单数据
+  if c.ShouldBindQuery(&person) == nil {
+    log.Println("====== Only Bind By Query String ======")
+    log.Println(person.Name)
+    log.Println(person.Address)
+  }
+  c.String(200, "Success")
 }
-
+//only bind query 模拟查询字符串请求
+//curl -X GET "localhost:8085/testing?name=eason&address=xyz"
+​
+//only bind query string, ignore form data 模拟查询字符串请求和Post表单,这里的表单会被忽略
+//curl -X POST "localhost:8085/testing?name=eason&address=xyz" --data 'name=ignore&address=ignore' -H "Content-Type:application/x-www-form-urlencoded
 ```
 
-### Bind Query String or Post Data
+### 绑定查询字符串或Post表单数据
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
+ [详情请参考](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
 
 ```go
 package main
-
+​
 import (
-	"log"
-	"time"
-
-	"github.com/gin-gonic/gin"
+  "log"
+  "time"
+​
+  "github.com/gin-gonic/gin"
 )
-
+​
 type Person struct {
-        Name       string    `form:"name"`
-        Address    string    `form:"address"`
-        Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
-        CreateTime time.Time `form:"createTime" time_format:"unixNano"`
-        UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+  Name       string    `form:"name"`
+  Address    string    `form:"address"`
+  Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+  CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+  UnixTime   time.Time `form:"unixTime" time_format:"unix"`
 }
-
+​
 func main() {
-	route := gin.Default()
-	route.GET("/testing", startPage)
-	route.Run(":8085")
+  route := gin.Default()
+  //route.GET("/testing", startPage)           //使用GET
+  route.POST("/testing", startPage)  //使用POST
+  route.Run(":8085")
 }
-
+​
 func startPage(c *gin.Context) {
-	var person Person
-	// If `GET`, only `Form` binding engine (`query`) used.
-	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
-	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
-        if c.ShouldBind(&person) == nil {
-                log.Println(person.Name)
-                log.Println(person.Address)
-                log.Println(person.Birthday)
-                log.Println(person.CreateTime)
-                log.Println(person.UnixTime)
-        }
-
-	c.String(200, "Success")
+  var person Person
+  // If `GET`, only `Form` binding engine (`query`) used.  如果路由是GET方法,则只使用查询字符串引擎绑定
+  // If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+  // See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+  //如果是POST方式, ShouldBind方法检查请求类型头Content-Type来自动选择绑定引擎,比如Json/XML
+  if c.ShouldBind(&person) == nil {
+    log.Println(person.Name)
+    log.Println(person.Address)
+    log.Println(person.Birthday)
+    log.Println(person.CreateTime)
+    log.Println(person.UnixTime)
+  }
+​
+  //if c.BindJSON(&person) == nil {
+  //  log.Println("====== Bind By JSON ======")
+  //  log.Println(person.Name)
+  //  log.Println(person.Address)
+  //}
+​
+  c.String(200, "Success")
 }
+//模拟查询字符串参数请求:
+//curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+//模拟Post Json请求
+//curl -X POST localhost:8085/testing --data '{"name":"JJ", "address":"xyz"}' -H "Content-Type:application/json"
 ```
 
 Test it with:
@@ -1023,100 +1076,121 @@ Test it with:
 $ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
-### Bind Uri
+### 绑定URI
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/846).
+将结构体中标签指定的字段与URI中对应的字段进行绑定, 请参考[详情](https://github.com/gin-gonic/gin/issues/846).
 
 ```go
 package main
-
+​
 import "github.com/gin-gonic/gin"
-
+​
 type Person struct {
-	ID string `uri:"id" binding:"required,uuid"`
-	Name string `uri:"name" binding:"required"`
+  ID string `uri:"id" binding:"required,uuid"`  //指定URI标签
+  Name string `uri:"name" binding:"required"`
 }
-
+​
 func main() {
-	route := gin.Default()
-	route.GET("/:name/:id", func(c *gin.Context) {
-		var person Person
-		if err := c.ShouldBindUri(&person); err != nil {
-			c.JSON(400, gin.H{"msg": err})
-			return
-		}
-		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
-	})
-	route.Run(":8088")
+  route := gin.Default()
+  //下面的URI中的name和id与Person结构中的标签分别对应
+  route.GET("/:name/:id", func(c *gin.Context) {
+    var person Person
+    if err := c.ShouldBindUri(&person); err != nil {
+      c.JSON(400, gin.H{"msg": err})
+      return
+    }
+    c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
+  })
+  route.Run(":8088")
 }
+//模拟请求
+//curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
+//curl -v localhost:8088/thinkerou/not-uuid
 ```
 
-Test it with:
+模拟请求测试:
 ```sh
 $ curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 $ curl -v localhost:8088/thinkerou/not-uuid
 ```
 
-### Bind Header
+### 绑定请求头
 
 ```go
 package main
-
+​
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
+  "fmt"
+  "github.com/gin-gonic/gin"
 )
-
+​
 type testHeader struct {
-	Rate   int    `header:"Rate"`
-	Domain string `header:"Domain"`
+  Rate   int    `header:"Rate"`   //结构中添加header标签
+  Domain string `header:"Domain"`
 }
-
+​
 func main() {
-	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		h := testHeader{}
-
-		if err := c.ShouldBindHeader(&h); err != nil {
-			c.JSON(200, err)
-		}
-
-		fmt.Printf("%#v\n", h)
-		c.JSON(200, gin.H{"Rate": h.Rate, "Domain": h.Domain})
-	})
-
-	r.Run()
-
-// client
-// curl -H "rate:300" -H "domain:music" 127.0.0.1:8080/
-// output
-// {"Domain":"music","Rate":300}
+  r := gin.Default()
+  r.GET("/", func(c *gin.Context) {
+​    h := testHeader{}
+​
+    //ShouldBindHeader是c.ShouldBindWith(obj, binding.Header)的快捷方法
+    if err := c.ShouldBindHeader(&h); err != nil {
+      c.JSON(200, err)
+    }
+​
+    fmt.Printf("%#v\n", h)
+    c.JSON(200, gin.H{"Rate": h.Rate, "Domain": h.Domain})
+  })
+​
+  r.Run()
 }
+​
+//模拟请求
+// curl -H "rate:300" -H "domain:music" http://localhost:8080/
+// 参考输出:
+// {"Domain":"music","Rate":300}
 ```
 
-### Bind HTML checkboxes
+### 绑定HTML复选框
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
+请参考[详情](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092), 将html与main.go放到一个目录,执行go run main.go运行后, 访问http://localhost:8080,勾选复选框,然后提交测试
 
 main.go
 
 ```go
-...
-
+package main
+​
+import (
+  "github.com/gin-gonic/gin"
+)
+​
 type myForm struct {
-    Colors []string `form:"colors[]"`
+  Colors []string `form:"colors[]"` //标签中的colors[]数组切片与html文件中的name="colors[]"对应
 }
-
-...
-
+​
+func main() {
+  r := gin.Default()
+​
+  //LoadHTMLGlob采用通配符模式匹配HTML文件,并将内容进行渲染,提供给前端访问
+  r.LoadHTMLGlob("*.html")
+​  r.GET("/", indexHandler)
+  r.POST("/", formHandler)
+​
+  r.Run(":8080")
+}
+​
+func indexHandler(c *gin.Context) {
+  c.HTML(200, "form.html", nil)
+}
+​
 func formHandler(c *gin.Context) {
-    var fakeForm myForm
-    c.ShouldBind(&fakeForm)
-    c.JSON(200, gin.H{"color": fakeForm.Colors})
+  var fakeForm myForm
+  c.Bind(&fakeForm) //Bind方法根据请求头类型Content-Type, 自动选择合适的绑定引擎,如Json/XML
+  c.JSON(200, gin.H{"color": fakeForm.Colors})
 }
-
-...
-
+​
+//将html与main.go放到一个目录,执行go run main.go运行后, 访问http://localhost:8080,勾选复选框,然后提交测试
 ```
 
 form.html
@@ -1134,51 +1208,62 @@ form.html
 </form>
 ```
 
-result:
+结果:
 
 ```
 {"color":["red","green","blue"]}
 ```
 
-### Multipart/Urlencoded binding
+### 绑定Multipart/Urlencoded类型的表单
+
+使用`ShouldBind`方法结合结构体标签, 以及mime/multipart包完成多部分类型表单数据`multipart/form-data`或URL编码类型表单`application/x-www-form-urlencoded`数据进行绑定:
 
 ```go
+package main
+​
+import (
+  "github.com/gin-gonic/gin"
+  "mime/multipart"
+  "net/http"
+)
+​
 type ProfileForm struct {
-	Name   string                `form:"name" binding:"required"`
-	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
-
-	// or for multiple files
-	// Avatars []*multipart.FileHeader `form:"avatar" binding:"required"`
+  Name   string                `form:"name" binding:"required"`
+  Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
+​
+  // or for multiple files
+  // Avatars []*multipart.FileHeader `form:"avatar" binding:"required"`
 }
-
+​
 func main() {
-	router := gin.Default()
-	router.POST("/profile", func(c *gin.Context) {
-		// you can bind multipart form with explicit binding declaration:
-		// c.ShouldBindWith(&form, binding.Form)
-		// or you can simply use autobinding with ShouldBind method:
-		var form ProfileForm
-		// in this case proper binding will be automatically selected
-		if err := c.ShouldBind(&form); err != nil {
-			c.String(http.StatusBadRequest, "bad request")
-			return
-		}
-
-		err := c.SaveUploadedFile(form.Avatar, form.Avatar.Filename)
-		if err != nil {
-			c.String(http.StatusInternalServerError, "unknown error")
-			return
-		}
-
-		// db.Save(&form)
-
-		c.String(http.StatusOK, "ok")
-	})
-	router.Run(":8080")
+  router := gin.Default()
+  router.POST("/profile", func(c *gin.Context) {
+    // you can bind multipart form with explicit binding declaration:  可以使用显示申明的方式,即用ShouldBindWith(&from, binding.Form)方法来绑定多部分类型表单multipart form
+    // c.ShouldBindWith(&form, binding.Form)
+    // or you can simply use autobinding with ShouldBind method:
+    var form ProfileForm
+    // in this case proper binding will be automatically selected
+    // 这里使用ShouldBind方法自动选择绑定器进行绑定
+    if err := c.ShouldBind(&form); err != nil {
+      c.String(http.StatusBadRequest, "bad request")
+      return
+    }
+    //保存上传的表单文件到指定的目标文件
+    err := c.SaveUploadedFile(form.Avatar, form.Avatar.Filename)
+    if err != nil {
+      c.String(http.StatusInternalServerError, "unknown error")
+      return
+    }
+    // db.Save(&form)
+    c.String(http.StatusOK, "ok")
+  })
+  router.Run(":8080")
 }
+//模拟测试:
+//curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
-Test it with:
+模拟测试:
 ```sh
 $ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
