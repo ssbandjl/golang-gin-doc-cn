@@ -36,7 +36,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [GinV1稳定版](#GinV1稳定版)
   - [使用jsoniter编译](#使用jsoniter编译)
   - [API示例](#API示例)
-    - [使用GET,POST,PUT,PATCH,DELETE,OPTIONS](#使用GET,POST,PUT,PATCH,DELETE,OPTIONS)
+    - [使用GET POST PUT PATCH DELETE OPTIONS](#使用GET POST PUT PATCH DELETE OPTIONS)
     - [获取请求中的路径参数](#获取请求中的路径参数)
     - [获取查询字符串参数](#获取查询字符串参数)
     - [获取Multipart/Urlencoded类型表单](#获取Multipart/Urlencoded类型表单)
@@ -207,7 +207,7 @@ $ go build -tags=jsoniter .
 
 你可以访问源码, 查看更多接口示例代码 [Gin示例仓库](https://github.com/gin-gonic/examples).
 
-### 使用GET,POST,PUT,PATCH,DELETE,OPTIONS
+### 使用GET POST PUT PATCH DELETE OPTIONS
 
 ```go
 func main() {
