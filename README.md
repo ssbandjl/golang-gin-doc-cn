@@ -14,6 +14,8 @@
 
 ## 简介
 
+本文地址: https://github.com/ssbandjl/golang-gin-doc-cn
+
 Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https://github.com/go-martini/martini)(暂停维护), Gin内部使用定制版本的[httprouter](https://github.com/julienschmidt/httprouter)(一款轻量级高性能HTTP请求路由器,或叫多路复用器), 速度是Martini的40倍, Gin拥有强大的性能,高效率,以及可扩展性, 所以赶快用起来吧!
 
 
@@ -34,11 +36,11 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [Gin-v1稳定版](#Gin v1稳定版)
   - [使用jsoniter编译](#使用jsoniter编译)
   - [API 示例](#API 示例)
-    - [使用GET, POST, PUT, PATCH, DELETE, OPTIONS](#使用GET, POST, PUT, PATCH, DELETE, OPTIONS)
+    - [使用GET,POST,PUT,PATCH,DELETE,OPTIONS](#使用GET,POST,PUT,PATCH,DELETE,OPTIONS)
     - [获取请求中的路径参数](#获取请求中的路径参数)
     - [获取查询字符串参数](#获取查询字符串参数)
     - [获取Multipart/Urlencoded类型表单](#获取Multipart/Urlencoded类型表单)
-    - [另一个示例: 查询参数 + Post表单](#另一个示例: 查询参数 + Post表单)
+    - [另一个示例:查询参数 + Post表单](#另一个示例:查询参数+Post表单)
     - [以Map映射作为查询字符串或Post表单参数](#以Map映射作为查询字符串或Post表单参数)
     - [上传文件](#上传文件)
       - [单个文件](#单个文件)
@@ -205,7 +207,7 @@ $ go build -tags=jsoniter .
 
 你可以访问源码, 查看更多接口示例代码 [Gin示例仓库](https://github.com/gin-gonic/examples).
 
-### 使用GET, POST, PUT, PATCH, DELETE, OPTIONS
+### 使用GET,POST,PUT,PATCH,DELETE,OPTIONS
 
 ```go
 func main() {
@@ -307,7 +309,7 @@ func main() {
 //返回结果: {"message":"消息","nick":"昵称","status":"posted"}
 ```
 
-### 另一个示例: 查询参数 + Post表单
+### 另一个示例:查询参数+Post表单
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
