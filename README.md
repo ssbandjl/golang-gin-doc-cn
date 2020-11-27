@@ -40,7 +40,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
     - [获取请求中的路径参数](#获取请求中的路径参数)
     - [获取查询字符串参数](#获取查询字符串参数)
     - [获取Multipart/Urlencoded类型表单](#获取Multipart/Urlencoded类型表单)
-    - [另一个示例:查询参数和Post表单](#另一个示例:查询参数和Post表单)
+    - [另一个示例,查询参数和Post表单](#另一个示例,查询参数和Post表单)
     - [以Map映射作为查询字符串或Post表单参数](#以Map映射作为查询字符串或Post表单参数)
     - [上传文件](#上传文件)
       - [单个文件](#单个文件)
@@ -60,7 +60,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
     - [绑定请求头](#绑定请求头)
     - [绑定HTML复选框](#绑定HTML复选框)
     - [绑定Multipart/Urlencoded类型的表单](#绑定Multipart/Urlencoded类型的表单)
-    - [XML, JSON, YAML, ProtoBuf等渲染](#XML, JSON, YAML, ProtoBuf等渲染)
+    - [XML,JSON,YAML,ProtoBuf等渲染](#XML,JSON,YAML,ProtoBuf等渲染)
       - [安全的JSON](#安全的JSON)
       - [JSONP](#jsonp)
       - [AsciiJSON](#asciijson)
@@ -309,7 +309,7 @@ func main() {
 //返回结果: {"message":"消息","nick":"昵称","status":"posted"}
 ```
 
-### 另一个示例:查询参数和Post表单
+### 另一个示例,查询参数和Post表单
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
@@ -1270,7 +1270,7 @@ func main() {
 $ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
-### XML, JSON, YAML, ProtoBuf等渲染
+### XML,JSON,YAML,ProtoBuf等渲染
 
 ```go
 package main
