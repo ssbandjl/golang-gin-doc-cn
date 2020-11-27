@@ -20,7 +20,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
 
 ## 云原生
 
-更多云原生相关技术干货, 欢迎大家关注我的微信公众号:[**云原生云**](https://mp.weixin.qq.com/s/QSYPwtG6x20EghKtZHWsVg)
+更多云原生相关技术干货, 欢迎大家关注我的微信公众号:**云原生云**
 
 ![云原生云二维码](img/云原生云二维码大.gif)
 
@@ -58,8 +58,8 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
     - [绑定请求头](#绑定请求头)
     - [绑定HTML复选框](#绑定HTML复选框)
     - [绑定Multipart/Urlencoded类型的表单](#绑定Multipart/Urlencoded类型的表单)
-    - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
-      - [SecureJSON](#securejson)
+    - [XML, JSON, YAML, ProtoBuf等渲染](#XML, JSON, YAML, ProtoBuf等渲染)
+      - [安全的JSON](#安全的JSON)
       - [JSONP](#jsonp)
       - [AsciiJSON](#asciijson)
       - [PureJSON](#purejson)
@@ -1268,13 +1268,22 @@ func main() {
 $ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
-### XML, JSON, YAML and ProtoBuf rendering
+### XML, JSON, YAML, ProtoBuf等渲染
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/testdata/protoexample"
+	"net/http"
+)
+
 func main() {
 	r := gin.Default()
 
 	// gin.H is a shortcut for map[string]interface{}
+	// gin.H对象是一个map映射,键名为字符串类型, 键值是接口,所以可以传递所有的类型
 	r.GET("/someJSON", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
@@ -1291,6 +1300,9 @@ func main() {
 		msg.Number = 123
 		// Note that msg.Name becomes "user" in the JSON
 		// Will output  :   {"user": "Lena", "Message": "hey", "Number": 123}
+
+		//JSON serializes the given struct as JSON into the response body. It also sets the Content-Type as "application/json".
+		//JSON方法将给定的结构序列化为JSON到响应体, 并设置内容类型Content-Type为:"application/json"
 		c.JSON(http.StatusOK, msg)
 	})
 
@@ -1302,37 +1314,77 @@ func main() {
 		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
+	//Protocol buffers are a language-neutral, platform-neutral extensible mechanism for serializing structured data.
+	//Protocol buffers(简称ProtoBuf)是来自Google的一个跨语言,跨平台,用于将结构化数据序列化的可扩展机制,
+	//详见:https://developers.google.com/protocol-buffers
 	r.GET("/someProtoBuf", func(c *gin.Context) {
 		reps := []int64{int64(1), int64(2)}
 		label := "test"
 		// The specific definition of protobuf is written in the testdata/protoexample file.
+		// 使用protoexample.Test这个特别的protobuf结构来定义测试数据
 		data := &protoexample.Test{
 			Label: &label,
 			Reps:  reps,
 		}
-		// Note that data becomes binary data in the response
+		// Note that data becomes binary data in the response  //将data序列化为二进制的响应数据
 		// Will output protoexample.Test protobuf serialized data
+		// ProtoBuf serializes the given struct as ProtoBuf into the response body.
+		// ProtoBuf方法将给定的结构序列化为ProtoBuf响应体
 		c.ProtoBuf(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
+
+/*
+模拟测试
+curl http://localhost:8080/someJSON
+{"message":"hey","status":200}
+
+curl http://localhost:8080/moreJSON
+{"user":"Lena","Message":"hey","Number":123}
+
+curl http://localhost:8080/someXML
+<map><message>hey</message><status>200</status></map>
+
+curl http://localhost:8080/someYAML
+message: hey
+status: 200
+
+curl http://localhost:8080/someProtoBuf
+test
+*/
 ```
 
-#### SecureJSON
+#### 安全的JSON
 
 Using SecureJSON to prevent json hijacking. Default prepends `"while(1),"` to response body if the given struct is array values.
 
+使用SecureJSON方法保护Json不被劫持, 如果响应体是一个数组, 该方法会默认添加`while(1)`前缀到响应头,  这样的死循环可以防止后面的代码被恶意执行, 也可以自定义安全JSON的前缀.
+
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 func main() {
 	r := gin.Default()
 
 	// You can also use your own secure json prefix
-	// r.SecureJsonPrefix(")]}',\n")
+	// 你也可以自定义安全Json的前缀
+	r.SecureJsonPrefix(")]}',\n")
 
+	//使用SecureJSON方法保护Json不被劫持, 如果响应体是一个数组, 该方法会默认添加`while(1)`前缀到响应头,  这样的死循环可以防止后面的代码被恶意执行, 也可以自定义安全JSON的前缀.
 	r.GET("/someJSON", func(c *gin.Context) {
 		names := []string{"lena", "austin", "foo"}
+
+		//names := map[string]string{
+		//	"hello": "world",
+		//}
 
 		// Will output  :   while(1);["lena","austin","foo"]
 		c.SecureJSON(http.StatusOK, names)
@@ -1341,12 +1393,29 @@ func main() {
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
+
+/*
+模拟请求:curl http://localhost:8080/someJSON
+)]}',
+["lena","austin","foo"]%
+*/
 ```
 #### JSONP
 
-Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+使用JSONP可以实现跨域请求数据, 如果请求中有查询字符串参数callback, 则将返回数据作为参数传递给callback值(前端函数名),整体作为一个响应体,返回给前端.
+
+JSONP是服务器与客户端跨源通信的常用方法. 最大特点就是简单适用, 老式浏览器全部支持, 服务器改造非常小, 它的基本思想是: 网页通过添加一个<script>元素, 向服务器请求JSON数据, 这种做法不受同源政策限制, 服务器收到请求后, 将数据放在一个指定名字的回调函数里传回来, 这样, 前端可以完成一次前端函数的调用, 而参数是后端返回的数据.
+
+注意: 这种方式存在被劫持的风险
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 func main() {
 	r := gin.Default()
 
@@ -1354,17 +1423,20 @@ func main() {
 		data := gin.H{
 			"foo": "bar",
 		}
-		
+
 		//callback is x
 		// Will output  :   x({\"foo\":\"bar\"})
+		// 使用JSONP可以实现跨域请求数据, 如果请求中有查询字符串参数callback, 则将返回数据作为参数传递给callback值(前端函数名),整体作为一个响应体,返回给前端
+		//JSONP是服务器与客户端跨源通信的常用方法。最大特点就是简单适用，老式浏览器全部支持，服务器改造非常小。
+		//它的基本思想是，网页通过添加一个<script>元素，向服务器请求JSON数据，这种做法不受同源政策限制；服务器收到请求后，将数据放在一个指定名字的回调函数里传回来
 		c.JSONP(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 
-        // client
-        // curl http://127.0.0.1:8080/JSONP?callback=x
+	// 模拟客户端,请求参数中有callback参数,值为x(前端函数名),最后响应内容为x("foo":"bar")
+	// curl http://127.0.0.1:8080/JSONP?callback=x
 }
 ```
 
