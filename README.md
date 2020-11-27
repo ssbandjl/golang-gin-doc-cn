@@ -33,14 +33,14 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [安装](#installation)
   - [快速开始](#quick-start)
   - [基准测试](#基准测试)
-  - [Gin-v1稳定版](#Gin v1稳定版)
+  - [GinV1稳定版](#GinV1稳定版)
   - [使用jsoniter编译](#使用jsoniter编译)
-  - [API 示例](#API 示例)
+  - [API示例](#API示例)
     - [使用GET,POST,PUT,PATCH,DELETE,OPTIONS](#使用GET,POST,PUT,PATCH,DELETE,OPTIONS)
     - [获取请求中的路径参数](#获取请求中的路径参数)
     - [获取查询字符串参数](#获取查询字符串参数)
     - [获取Multipart/Urlencoded类型表单](#获取Multipart/Urlencoded类型表单)
-    - [另一个示例:查询参数 + Post表单](#另一个示例:查询参数+Post表单)
+    - [另一个示例:查询参数和Post表单](#另一个示例:查询参数和Post表单)
     - [以Map映射作为查询字符串或Post表单参数](#以Map映射作为查询字符串或Post表单参数)
     - [上传文件](#上传文件)
       - [单个文件](#单个文件)
@@ -187,7 +187,7 @@ Gin 使用定制版本的[HttpRouter](https://github.com/julienschmidt/httproute
 
   第(4)列:每个重复任务平均分配内存的次数, 单位allocs/op, 值越低越好
 
-## Gin-v1稳定版
+## GinV1稳定版
 
 - [x] 零内存分配的路由器
 - [x] 仍然是最快的http路由器和框架
@@ -203,7 +203,7 @@ Gin 使用定制版本的[HttpRouter](https://github.com/julienschmidt/httproute
 $ go build -tags=jsoniter .
 ```
 
-## API 示例
+## API示例
 
 你可以访问源码, 查看更多接口示例代码 [Gin示例仓库](https://github.com/gin-gonic/examples).
 
@@ -309,7 +309,7 @@ func main() {
 //返回结果: {"message":"消息","nick":"昵称","status":"posted"}
 ```
 
-### 另一个示例:查询参数+Post表单
+### 另一个示例:查询参数和Post表单
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
