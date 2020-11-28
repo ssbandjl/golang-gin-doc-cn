@@ -14,7 +14,7 @@
 
 ## 简介
 
-本文基于Golang Gin框架[官方文档](https://github.com/gin-gonic/gin)翻译, 验证了其中大部分示例代码, 便于Gin快速入门.
+本文基于Golang Gin框架[官方文档](https://github.com/gin-gonic/gin)翻译, 验证了其中大部分示例代码, 便于Gin快速入门, 也欢迎大家提出意见, 一起交流学习.
 
 本文地址: https://github.com/ssbandjl/golang-gin-doc-cn
 
