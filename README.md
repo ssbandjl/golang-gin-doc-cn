@@ -32,8 +32,8 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
 
 - [GinWeb框架](#GinWeb框架)
   - [内容](#内容)
-  - [安装](#installation)
-  - [快速开始](#quick-start)
+  - [安装](#安装)
+  - [快速开始](#快速开始)
   - [基准测试](#基准测试)
   - [GinV1稳定版](#GinV1稳定版)
   - [使用jsoniter编译](#使用jsoniter编译)
