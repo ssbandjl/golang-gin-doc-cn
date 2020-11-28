@@ -36,7 +36,7 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
   - [GinV1稳定版](#GinV1稳定版)
   - [使用jsoniter编译](#使用jsoniter编译)
   - [API示例](#API示例)
-    - [使用GET POST PUT PATCH DELETE OPTIONS](#使用GET POST PUT PATCH DELETE OPTIONS)
+    - [使用GET,POST,PUT,PATCH,DELETE,OPTIONS](#使用GET,POST,PUT,PATCH,DELETE,OPTIONS)
     - [获取请求中的路径参数](#获取请求中的路径参数)
     - [获取查询字符串参数](#获取查询字符串参数)
     - [获取Multipart/Urlencoded类型表单](#获取Multipart/Urlencoded类型表单)
@@ -64,33 +64,33 @@ Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https
       - [安全的JSON](#安全的JSON)
       - [JSONP](#jsonp)
       - [AsciiJSON](#asciijson)
-      - [PureJSON](#purejson)
-    - [Serving static files](#serving-static-files)
-    - [Serving data from file](#serving-data-from-file)
-    - [Serving data from reader](#serving-data-from-reader)
-    - [HTML rendering](#html-rendering)
-      - [Custom Template renderer](#custom-template-renderer)
-      - [Custom Delimiters](#custom-delimiters)
-      - [Custom Template Funcs](#custom-template-funcs)
-    - [Multitemplate](#multitemplate)
-    - [Redirects](#redirects)
-    - [Custom Middleware](#custom-middleware)
-    - [Using BasicAuth() middleware](#using-basicauth-middleware)
-    - [Goroutines inside a middleware](#goroutines-inside-a-middleware)
-    - [Custom HTTP configuration](#custom-http-configuration)
-    - [Support Let's Encrypt](#support-lets-encrypt)
-    - [Run multiple service using Gin](#run-multiple-service-using-gin)
-    - [Graceful shutdown or restart](#graceful-shutdown-or-restart)
-      - [Third-party packages](#third-party-packages)
-      - [Manually](#manually)
-    - [Build a single binary with templates](#build-a-single-binary-with-templates)
-    - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
-    - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
-    - [http2 server push](#http2-server-push)
-    - [Define format for the log of routes](#define-format-for-the-log-of-routes)
-    - [Set and get a cookie](#set-and-get-a-cookie)
-  - [Testing](#testing)
-  - [Users](#users)
+      - [不带转义的原始JSON](#不带转义的原始JSON)
+    - [静态文件服务](#静态文件服务)
+    - [返回文件数据](#返回文件数据)
+    - [用文件读出器提供文件数据服务](#用文件读出器提供文件数据服务)
+    - [HTML渲染](#HTML渲染)
+      - [自定义模板渲染器](#自定义模板渲染器)
+      - [自定义分隔符](#自定义分隔符)
+      - [自定义模板方法](#自定义模板方法)
+    - [多个模板](#多个模板)
+    - [重定向](#重定向)
+    - [自定义中间件](#自定义中间件)
+    - [使用基本认证BasicAuth()中间件](#使用基本认证BasicAuth()中间件)
+    - [在中间件中使用协程Goroutines](#在中间件中使用协程Goroutines)
+    - [自定义HTTP配置](#自定义HTTP配置)
+    - [支持Let's Encrypt证书加密处理HTTPS](#支持Let's Encrypt证书加密处理HTTPS)
+    - [使用Gin运行多个服务](#使用Gin运行多个服务)
+    - [优雅的关闭和重启服务](#优雅的关闭和重启服务)
+      - [使用第三方包](#使用第三方包)
+      - [手动实现](#手动实现)
+    - [将模板文件一起编译为一个二进制单文件](#将模板文件一起编译为一个二进制单文件)
+    - [使用自定义的结构绑定请求表单](#使用自定义的结构绑定请求表单)
+    - [尝试将请求体绑定到不同的结构](#尝试将请求体绑定到不同的结构)
+    - [http2服务推送](#http2服务推送)
+    - [定义路由日志格式](#定义路由日志格式)
+    - [设置和读取Cookie](#设置和读取Cookie)
+  - [测试](#测试)
+  - [Gin框架用户](#Gin框架用户)
 
 ## 安装
 
@@ -207,7 +207,7 @@ $ go build -tags=jsoniter .
 
 你可以访问源码, 查看更多接口示例代码 [Gin示例仓库](https://github.com/gin-gonic/examples).
 
-### 使用GET POST PUT PATCH DELETE OPTIONS
+### 使用GET,POST,PUT,PATCH,DELETE,OPTIONS
 
 ```go
 func main() {
@@ -1444,9 +1444,16 @@ func main() {
 
 #### AsciiJSON
 
-Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII characters.
+使用ASCII编码, 将非ASCII的字符进行转义和编码, 生成纯ASCII编码的JSON
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 func main() {
 	r := gin.Default()
 
@@ -1456,121 +1463,197 @@ func main() {
 			"tag":  "<br>",
 		}
 
-		// will output : {"lang":"GO\u8bed\u8a00","tag":"\u003cbr\u003e"}
+		// 输出结果 : {"lang":"GO\u8bed\u8a00","tag":"\u003cbr\u003e"}
+		// AsciiJSON方法返回带有Unicode编码和转义组成的纯ASCII字符串
 		c.AsciiJSON(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
+
+/*
+模拟请求:curl http://localhost:8080/someJSON
+ */
 ```
 
-#### PureJSON
+#### 不带转义的原始JSON
 
-Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
-This feature is unavailable in Go 1.6 and lower.
+通常, JSON会将特殊的HTML字符转化为他们的unicode编码, 如标签`<`转为`\u003c` 使用PureJSON方法可以得到原始不做转义的字符串.
+
+注意: 该方法至少需要Go版本1.6以上
 
 ```go
+package main
+
+import "github.com/gin-gonic/gin"
+
 func main() {
 	r := gin.Default()
-	
+
 	// Serves unicode entities
 	r.GET("/json", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
-	
+
 	// Serves literal characters
 	r.GET("/purejson", func(c *gin.Context) {
 		c.PureJSON(200, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
-	
+
 	// listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
+/*
+模拟请求,得到将HTML标签转义后的JSON字符串
+curl http://localhost:8080/json
+{"html":"\u003cb\u003eHello, world!\u003c/b\u003e"}                                                                                                                                                                           
+得到原始JSON字符串
+curl http://localhost:8080/purejson
+{"html":"<b>Hello, world!</b>"}
+*/
 ```
 
-### Serving static files
+### 静态文件服务
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"os"
+)
+
 func main() {
 	router := gin.Default()
-	router.Static("/assets", "./assets")
-	router.StaticFS("/more_static", http.Dir("my_file_system"))
-	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
+	cwd, _ := os.Getwd()  //获取当前文件目录
+	log.Printf("当前项目路径:%s", cwd)
+	router.Static("/static", cwd) //提供静态文件服务器, 第一个参数为相对路径,第二个参数为根路径, 这个路径一般放置css,js,fonts等静态文件,前端html中采用/static/js/xxx或/static/css/xxx等相对路径的方式引用
+	router.StaticFS("/more_static", http.Dir("./")) //将本地文件树结构映射到前端, 通过浏览器可以访问本地文件系统, 模拟访问:http://localhost:8080/more_static
+	router.StaticFile("/logo.png", "./resources/logo.png")  //StaticFile提供单静态单文件服务, 模拟访问:http://localhost:8080/log.png
 
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
 ```
 
-### Serving data from file
+### 返回文件数据
 
 ```go
+package main
+
+import (
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 func main() {
 	router := gin.Default()
+	router.Use(cors.Default())
 
 	router.GET("/local/file", func(c *gin.Context) {
-		c.File("local/file.go")
+		c.File("./main.go")
 	})
 
-	var fs http.FileSystem = // ...
+
+	// A FileSystem implements access to a collection of named files.
+	// The elements in a file path are separated by slash ('/', U+002F)
+	// characters, regardless of host operating system convention.
+	// FileSystem接口, 要求实现文件的访问的方法, 提供文件访问服务根路径的HTTP处理器
+	var fs http.FileSystem = http.Dir("./")  //将本地目录作为文件服务根路径
 	router.GET("/fs/file", func(c *gin.Context) {
-		c.FileFromFS("fs/file.go", fs)
+		c.FileFromFS("main.go", fs)  //将文件服务系统下的文件数据返回
 	})
+	router.Run(":8080")
 }
+/*
+模拟访问文件数据:
+curl http://localhost:8080/local/file
 
+模拟访问文件系统下的文件数据:
+curl http://localhost:8080/fs/file
+*/
 ```
 
-### Serving data from reader
+### 用文件读出器提供文件数据服务
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 func main() {
 	router := gin.Default()
 	router.GET("/someDataFromReader", func(c *gin.Context) {
 		response, err := http.Get("https://raw.githubusercontent.com/gin-gonic/logo/master/color.png")
-		if err != nil || response.StatusCode != http.StatusOK {
+		if err != nil || response.StatusCode != http.StatusOK {  //请求链接中的文件出现错误时, 直接返回服务不可用
 			c.Status(http.StatusServiceUnavailable)
 			return
 		}
 
-		reader := response.Body
- 		defer reader.Close()
+		reader := response.Body  //用响应体内容构造一个文件读出器
+		defer reader.Close()
 		contentLength := response.ContentLength
 		contentType := response.Header.Get("Content-Type")
 
 		extraHeaders := map[string]string{
 			"Content-Disposition": `attachment; filename="gopher.png"`,
 		}
-
+		// DataFromReader writes the specified reader into the body stream and updates the HTTP code.
+		// func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {}
+		// DataFromReader方法将指定的读出器reader中的内容, 写入http响应体流中, 并更新响应码, 响应头信息等
 		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 	})
 	router.Run(":8080")
 }
+/*
+模拟访问:
+curl http://localhost:8080/someDataFromReader
+*/
 ```
 
-### HTML rendering
+### HTML渲染
 
-Using LoadHTMLGlob() or LoadHTMLFiles()
+使用LoadHTMLGlob()方法或LoadHTMLFiles()方法
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 func main() {
 	router := gin.Default()
+	//LoadHTMLGlob方法以glob模式加载匹配的HTML文件, 并与HTML渲染器结合
 	router.LoadHTMLGlob("templates/*")
 	//router.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
 	router.GET("/index", func(c *gin.Context) {
+		//HTML方法设置响应码, 模板文件名, 渲染替换模板中的值, 设置响应内容类型Content-Type "text/html"
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"title": "Main website",
 		})
 	})
 	router.Run(":8080")
 }
+/*
+模拟测试:
+curl http://localhost:8080/index
+*/
 ```
 
-templates/index.tmpl
+增加模板文件, templates/index.tmpl
 
 ```html
 <html>
@@ -1580,7 +1663,7 @@ templates/index.tmpl
 </html>
 ```
 
-Using templates with same name in different directories
+使用不同文件夹下的相同文件名的模板文件
 
 ```go
 func main() {
@@ -1600,7 +1683,7 @@ func main() {
 }
 ```
 
-templates/posts/index.tmpl
+posts目录下添加模板文件, templates/posts/index.tmpl
 
 ```html
 {{ define "posts/index.tmpl" }}
@@ -1612,7 +1695,7 @@ templates/posts/index.tmpl
 {{ end }}
 ```
 
-templates/users/index.tmpl
+users目录下添加模板文件, templates/users/index.tmpl
 
 ```html
 {{ define "users/index.tmpl" }}
@@ -1624,24 +1707,39 @@ templates/users/index.tmpl
 {{ end }}
 ```
 
-#### Custom Template renderer
+#### 自定义模板渲染器
 
-You can also use your own html template render
+你也可以使用你自定义的HTML模板渲染器, 需要自定义模板文件file1, file2等
 
 ```go
-import "html/template"
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"html/template"
+	"net/http"
+)
 
 func main() {
 	router := gin.Default()
+	//template.ParseFiles(文件1,文件2...)创建一个模板对象, 然后解析一组模板，使用文件名作为模板的名字
+	// Must方法将模板和错误进行包裹, 返回模板的内存地址 一般用于变量初始化,比如:var t = template.Must(template.New("name").Parse("html"))
 	html := template.Must(template.ParseFiles("file1", "file2"))
-	router.SetHTMLTemplate(html)
+	router.SetHTMLTemplate(html) //关联模板和HTML渲染器
+
+	router.GET("/index", func(c *gin.Context) {
+		//HTML方法设置响应码, 模板文件名, 渲染替换模板中的值, 设置响应内容类型Content-Type "text/html"
+		c.HTML(http.StatusOK, "file1", gin.H{
+			"title": "Main website",
+		})
+	})
 	router.Run(":8080")
 }
 ```
 
-#### Custom Delimiters
+#### 自定义分隔符
 
-You may use custom delims
+你可以自定义分隔符, 模板中默认的分隔符是{{  }}, 我们也可以修改, 比如下面增加一对中括号
 
 ```go
 	r := gin.Default()
@@ -1649,79 +1747,115 @@ You may use custom delims
 	r.LoadHTMLGlob("/path/to/templates")
 ```
 
-#### Custom Template Funcs
+#### 自定义模板方法
 
-See the detail [example code](https://github.com/gin-gonic/examples/tree/master/template).
+详见 [示例代码](https://github.com/gin-gonic/examples/tree/master/template).
 
-main.go
+模板中与后端都定义好模板方法, 模板渲染时执行该方法, 类似过滤器方法, 比如时间格式化操作
 
 ```go
-import (
-    "fmt"
-    "html/template"
-    "net/http"
-    "time"
+package main
 
-    "github.com/gin-gonic/gin"
+import (
+	"fmt"
+	"html/template"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func formatAsDate(t time.Time) string {
-    year, month, day := t.Date()
-    return fmt.Sprintf("%d%02d/%02d", year, month, day)
+	year, month, day := t.Date()  //Date方法返回年,月,日
+	return fmt.Sprintf("%d%02d/%02d", year, month, day)  //格式化时间
 }
 
 func main() {
-    router := gin.Default()
-    router.Delims("{[{", "}]}")
-    router.SetFuncMap(template.FuncMap{
-        "formatAsDate": formatAsDate,
-    })
-    router.LoadHTMLFiles("./testdata/template/raw.tmpl")
+	router := gin.Default()
+	router.Delims("{[{", "}]}") //自定义模板中的左右分隔符
+	//SetFuncMap方法用给定的template.FuncMap设置到Gin引擎上, 后面模板渲染时会调用同名方法
+	//FuncMap是一个map,键名关联方法名, 键值关联方法, 每个方法必须返回一个值, 或者返回两个值,其中第二个是error类型
+	router.SetFuncMap(template.FuncMap{
+		"formatAsDate": formatAsDate,
+	})
+	router.LoadHTMLFiles("./testdata/template/raw.tmpl") //加载单个模板文件并与HTML渲染器关联
 
-    router.GET("/raw", func(c *gin.Context) {
-        c.HTML(http.StatusOK, "raw.tmpl", gin.H{
-            "now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
-        })
-    })
+	router.GET("/raw", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "raw.tmpl", gin.H{
+			"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+		})
+	})
 
-    router.Run(":8080")
+	router.Run(":8080")
 }
 
+/*
+模拟测试:
+curl http://localhost:8080/raw
+*/
 ```
 
-raw.tmpl
+定义模板文件: raw.tmpl
 
 ```html
 Date: {[{.now | formatAsDate}]}
 ```
 
-Result:
+时间格式化结果:
 ```
 Date: 2017/07/01
 ```
 
-### Multitemplate
+### 多个模板
 
-Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
+Gin默认只使用一个html.Template模板引擎, 也可以参考[多模板渲染器](https://github.com/gin-contrib/multitemplate)使用类似Go1.6的块级模板`block template`功能. 
 
-### Redirects
+模板相关详情请参考官方[template包](https://golang.org/pkg/text/template/)
 
-Issuing a HTTP redirect is easy. Both internal and external locations are supported.
+### 重定向
+
+Gin返回一个HTTP重定向非常简单, 使用Redirect方法即可. 内部和外部链接都支持.
 
 ```go
-r.GET("/test", func(c *gin.Context) {
-	c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
-})
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+func main() {
+	r := gin.Default()
+	r.GET("/test", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")  //重定向到外部链接
+	})
+
+	//重定向到内部链接
+	r.GET("/internal", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/home")
+	})
+
+	r.GET("/home", func(c *gin.Context) {
+		c.JSON(200, gin.H{"msg": "这是首页"})
+	})
+	r.Run(":8080")
+}
+
+/*
+重定向到外部链接,访问:http://localhost:8080/test
+重定向到内部链接,访问:http://localhost:8080/internal
+*/
 ```
 
-Issuing a HTTP redirect from POST. Refer to issue: [#444](https://github.com/gin-gonic/gin/issues/444)
+从POST方法中完成HTTP重定向, 参考问题[#444](https://github.com/gin-gonic/gin/issues/444)
+
 ```go
 r.POST("/test", func(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/foo")
 })
 ```
 
-Issuing a Router redirect, use `HandleContext` like below.
+如果要产生一个路由重定向, 类似上面的内部重定向, 则使用 `HandleContext`方法, 像下面这样使用:
 
 ``` go
 r.GET("/test", func(c *gin.Context) {
@@ -1734,25 +1868,35 @@ r.GET("/test2", func(c *gin.Context) {
 ```
 
 
-### Custom Middleware
+### 自定义中间件
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"time"
+)
+
+//自定义日志中间件
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		t := time.Now()
 
-		// Set example variable
+		// Set example variable 在gin上下文中设置键值对
 		c.Set("example", "12345")
 
 		// before request
 
+		//Next方法只能用于中间件中,在当前中间件中, 从方法链执行挂起的处理器
 		c.Next()
 
-		// after request
+		// after request  打印中间件执行耗时
 		latency := time.Since(t)
 		log.Print(latency)
 
-		// access the status we are sending
+		// access the status we are sending  打印本中间件的状态码
 		status := c.Writer.Status()
 		log.Println(status)
 	}
@@ -1760,11 +1904,10 @@ func Logger() gin.HandlerFunc {
 
 func main() {
 	r := gin.New()
+  //使用该自定义中间件
 	r.Use(Logger())
-
 	r.GET("/test", func(c *gin.Context) {
-		example := c.MustGet("example").(string)
-
+		example := c.MustGet("example").(string) //从上下文中获取键值对
 		// it would print: "12345"
 		log.Println(example)
 	})
@@ -1774,9 +1917,16 @@ func main() {
 }
 ```
 
-### Using BasicAuth() middleware
+### 使用基本认证BasicAuth()中间件
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
 // simulate some private data
 var secrets = gin.H{
 	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
@@ -1789,6 +1939,7 @@ func main() {
 
 	// Group using gin.BasicAuth() middleware
 	// gin.Accounts is a shortcut for map[string]string
+	// 路由组authorized使用基本认证中间件, 参数为gin.Accounts,是一个map,键名是用户名, 键值是密码, 该中间件会将认证信息保存到cookie中
 	authorized := r.Group("/admin", gin.BasicAuth(gin.Accounts{
 		"foo":    "bar",
 		"austin": "1234",
@@ -1800,6 +1951,7 @@ func main() {
 	// hit "localhost:8080/admin/secrets
 	authorized.GET("/secrets", func(c *gin.Context) {
 		// get user, it was set by the BasicAuth middleware
+		// 从cookie中获取用户认证信息, 键名为user
 		user := c.MustGet(gin.AuthUserKey).(string)
 		if secret, ok := secrets[user]; ok {
 			c.JSON(http.StatusOK, gin.H{"user": user, "secret": secret})
@@ -1811,24 +1963,38 @@ func main() {
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
+/*
+测试访问:http://localhost:8080/admin/secrets
+*/
 ```
 
-### Goroutines inside a middleware
+### 在中间件中使用协程Goroutines
 
-When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+在中间件或者控制器中启动新协程时, 不能直接使用原来的Gin上下文, 必须使用一个只读的上线文副本
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"time"
+)
+
 func main() {
 	r := gin.Default()
 
 	r.GET("/long_async", func(c *gin.Context) {
 		// create copy to be used inside the goroutine
+		// 创建一个Gin上下文的副本, 准备在协程Goroutine中使用
 		cCp := c.Copy()
 		go func() {
 			// simulate a long task with time.Sleep(). 5 seconds
+			// 模拟长时间任务,这里是5秒
 			time.Sleep(5 * time.Second)
 
 			// note that you are using the copied context "cCp", IMPORTANT
+			// 在中间件或者控制器中启动协程时, 不能直接使用原来的上下文, 必须使用一个只读的上线文副本
 			log.Println("Done! in path " + cCp.Request.URL.Path)
 		}()
 	})
@@ -1838,17 +2004,22 @@ func main() {
 		time.Sleep(5 * time.Second)
 
 		// since we are NOT using a goroutine, we do not have to copy the context
+		// 没有使用协程时, 可以直接使用Gin上下文
 		log.Println("Done! in path " + c.Request.URL.Path)
 	})
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
+/*
+模拟同步阻塞访问:http://localhost:8080/long_sync
+模拟异步非阻塞访问:http://localhost:8080/long_async
+*/
 ```
 
-### Custom HTTP configuration
+### 自定义HTTP配置
 
-Use `http.ListenAndServe()` directly, like this:
+直接使用 `http.ListenAndServe()`方法:
 
 ```go
 func main() {
@@ -1856,7 +2027,7 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 ```
-or
+或者自定义HTTP配置
 
 ```go
 func main() {
@@ -1873,9 +2044,9 @@ func main() {
 }
 ```
 
-### Support Let's Encrypt
+### 支持Let's Encrypt证书加密处理HTTPS
 
-example for 1-line LetsEncrypt HTTPS servers.
+下面是一行式的LetsEncrypt HTTPS服务
 
 ```go
 package main
@@ -1894,12 +2065,12 @@ func main() {
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong")
 	})
-
+	//一行式LetsEncrypt证书, 处理https
 	log.Fatal(autotls.Run(r, "example1.com", "example2.com"))
 }
 ```
 
-example for custom autocert manager.
+自定义自动证书管理器autocert manager实例代码:
 
 ```go
 package main
@@ -1921,18 +2092,20 @@ func main() {
 	})
 
 	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("example1.com", "example2.com"),
-		Cache:      autocert.DirCache("/var/www/.cache"),
+		Prompt:     autocert.AcceptTOS, //Prompt指定一个回调函数有条件的接受证书机构CA的TOS服务, 使用AcceptTOS总是接受服务条款
+		HostPolicy: autocert.HostWhitelist("example1.com", "example2.com"),  //HostPolicy用于控制指定哪些域名, 管理器将检索新证书
+		Cache:      autocert.DirCache("/var/www/.cache"),  //缓存证书和其他状态
 	}
 
 	log.Fatal(autotls.RunWithManager(r, &m))
 }
 ```
 
-### Run multiple service using Gin
+详情参考[autotls包](https://github.com/gin-gonic/autotls)
 
-See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
+### 使用Gin运行多个服务
+
+可以在主函数中使用协程Goroutine运行多个服务, 每个服务端口不同, 路由分组也不同. 请参考这个[问题](https://github.com/gin-gonic/gin/issues/346),  尝试运行以下示例代码:
 
 ```go
 package main
@@ -2017,15 +2190,27 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+/*
+模拟访问服务1:
+curl http://localhost:8080/
+{"code":200,"error":"Welcome server 01"}
+
+模拟访问服务2:
+curl http://localhost:8081/
+{"code":200,"error":"Welcome server 02"}
+*/
 ```
 
-### Graceful shutdown or restart
+### 优雅的关闭和重启服务
 
-There are a few approaches you can use to perform a graceful shutdown or restart. You can make use of third-party packages specifically built for that, or you can manually do the same with the functions and methods from the built-in packages.
+有一些方法可以优雅的关闭或者重启服务, 比如不应该中断活动的连接, 需要优雅等待服务完成后才执行关闭或重启. 你可以使用第三方包来实现, 也可以使用内置的包自己实现优雅关闭或重启.
 
-#### Third-party packages
+#### 使用第三方包
 
-We can use [fvbock/endless](https://github.com/fvbock/endless) to replace the default `ListenAndServe`. Refer to issue [#296](https://github.com/gin-gonic/gin/issues/296) for more details.
+[fvbock/endless](https://github.com/fvbock/endless) 包, 可以实现Golang HTTP/HTTPS服务的零停机和优雅重启(Golang版本至少1.3以上)
+
+我们可以使用[fvbock/endless](https://github.com/fvbock/endless) 替代默认的 `ListenAndServe`方法, 更多详情, 请参考问题[#296](https://github.com/gin-gonic/gin/issues/296).
 
 ```go
 router := gin.Default()
@@ -2034,15 +2219,15 @@ router.GET("/", handler)
 endless.ListenAndServe(":4242", router)
 ```
 
-Alternatives:
+其他替代包:
 
-* [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
-* [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
-* [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
+* [manners](https://github.com/braintree/manners): 一个优雅的Go HTTP服务, 可以优雅的关闭服务.
+* [graceful](https://github.com/tylerb/graceful): 优雅的Go包, 能够优雅的关闭一个http.Handler服务
+* [grace](https://github.com/facebookgo/grace): 该包为Go服务实现优雅重启, 零停机
 
-#### Manually
+#### 手动实现
 
-In case you are using Go 1.8 or a later version, you may not need to use those libraries. Consider using `http.Server`'s built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. The example below describes its usage, and we've got more examples using gin [here](https://github.com/gin-gonic/examples/tree/master/graceful-shutdown).
+如果你使用Go1.8或者更高的版本, 你可能不需要使用这些库. 可以考虑使用http.Server的内置方法[Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown)来优雅关闭服务. 下面的示例描述了基本用法, 更多示例请参考[这里](https://github.com/gin-gonic/examples/tree/master/graceful-shutdown)
 
 ```go
 // +build go1.8
@@ -2075,6 +2260,7 @@ func main() {
 
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
+	// 用协程初始化一个服务, 它不会阻塞下面的优雅逻辑处理
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
@@ -2083,37 +2269,106 @@ func main() {
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
+	//等待一个操作系统的中断信号, 来优雅的关闭服务
 	quit := make(chan os.Signal)
-	// kill (no param) default send syscall.SIGTERM
-	// kill -2 is syscall.SIGINT
-	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
+	// kill (no param) default send syscall.SIGTERM  //kill会发送终止信号
+	// kill -2 is syscall.SIGINT  //发送强制进程结束信号
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it  //发送SIGKILL信号给进程
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	<-quit //阻塞在这里,直到获取到一个上面的信号
 	log.Println("Shutting down server...")
 
 	// The context is used to inform the server it has 5 seconds to finish
 	// the request it is currently handling
+	//这里使用context上下文包, 有5秒钟的处理超时时间
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil {  //利用内置Shutdown方法优雅关闭服务
 		log.Fatal("Server forced to shutdown:", err)
 	}
-	
+
 	log.Println("Server exiting")
 }
 ```
 
-### Build a single binary with templates
+### 将模板文件一起编译为一个二进制单文件
 
-You can build a server into a single binary containing templates by using [go-assets][].
+使用[go-assets][], 你可以将模板文件和服务一起编译为一个二进制的单文件, 可以方便快捷的部署该服务. 请参考go资产编译器[go-assets-builder](https://github.com/jessevdk/go-assets-builder)
+
+使用方法:
+
+```
+1.下载依赖包
+go get github.com/gin-gonic/gin
+go get github.com/jessevdk/go-assets-builder
+
+2.将html文件夹(包含html代码)生成为go资产文件assets.go
+go-assets-builder html -o assets.go
+
+3.编译构建,将服务打包为单二进制文件
+go build -o assets-in-binary
+
+4.运行服务
+./assets-in-binary
+```
+
+go资产文件go-assets.go参考内容如下:
+
+```go
+package main
+
+import (
+	"time"
+
+	"github.com/jessevdk/go-assets"
+)
+
+var _Assetsbfa8d115ce0617d89507412d5393a462f8e9b003 = "<!doctype html>\n<body>\n  <p>Can you see this? → {{.Bar}}</p>\n</body>\n"
+var _Assets3737a75b5254ed1f6d588b40a3449721f9ea86c2 = "<!doctype html>\n<body>\n  <p>Hello, {{.Foo}}</p>\n</body>\n"
+
+// Assets returns go-assets FileSystem
+var Assets = assets.NewFileSystem(map[string][]string{"/": {"html"}, "/html": {"bar.tmpl", "index.tmpl"}}, map[string]*assets.File{
+	"/": {
+		Path:     "/",
+		FileMode: 0x800001ed,
+		Mtime:    time.Unix(1524365738, 1524365738517125470),
+		Data:     nil,
+	}, "/html": {
+		Path:     "/html",
+		FileMode: 0x800001ed,
+		Mtime:    time.Unix(1524365491, 1524365491289799093),
+		Data:     nil,
+	}, "/html/bar.tmpl": {
+		Path:     "/html/bar.tmpl",
+		FileMode: 0x1a4,
+		Mtime:    time.Unix(1524365491, 1524365491289611557),
+		Data:     []byte(_Assetsbfa8d115ce0617d89507412d5393a462f8e9b003),
+	}, "/html/index.tmpl": {
+		Path:     "/html/index.tmpl",
+		FileMode: 0x1a4,
+		Mtime:    time.Unix(1524365491, 1524365491289995821),
+		Data:     []byte(_Assets3737a75b5254ed1f6d588b40a3449721f9ea86c2),
+	}}, "")
+```
 
 [go-assets]: https://github.com/jessevdk/go-assets
 
 ```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"html/template"
+
+)
+
 func main() {
 	r := gin.New()
 
-	t, err := loadTemplate()
+	t, err := loadTemplate() //加载go-assets-builder生成的模板
 	if err != nil {
 		panic(err)
 	}
@@ -2126,18 +2381,19 @@ func main() {
 }
 
 // loadTemplate loads templates embedded by go-assets-builder
+// 加载go-assets-builder生成的资产文件, 返回模板的地址
 func loadTemplate() (*template.Template, error) {
 	t := template.New("")
 	for name, file := range Assets.Files {
 		defer file.Close()
-		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
+		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {  //跳过目录或没有.tmpl后缀的文件
 			continue
 		}
 		h, err := ioutil.ReadAll(file)
 		if err != nil {
 			return nil, err
 		}
-		t, err = t.New(name).Parse(string(h))
+		t, err = t.New(name).Parse(string(h))  //新建一个模板, 文件名做为模板名, 文件内容作为模板内容
 		if err != nil {
 			return nil, err
 		}
@@ -2146,11 +2402,11 @@ func loadTemplate() (*template.Template, error) {
 }
 ```
 
-See a complete example in the `https://github.com/gin-gonic/examples/tree/master/assets-in-binary` directory.
+完整示例请查看该[目录](https://github.com/gin-gonic/examples/tree/master/assets-in-binary)
 
-### Bind form-data request with custom struct
+### 使用自定义的结构绑定请求表单
 
-The follow example using custom struct:
+参考实例代码:
 
 ```go
 type StructA struct {
@@ -2211,7 +2467,7 @@ func main() {
 }
 ```
 
-Using the command `curl` command result:
+使用命令 `curl` 模拟请求测试和结果如下:
 
 ```
 $ curl "http://localhost:8080/getb?field_a=hello&field_b=world"
@@ -2222,10 +2478,9 @@ $ curl "http://localhost:8080/getd?field_x=hello&field_d=world"
 {"d":"world","x":{"FieldX":"hello"}}
 ```
 
-### Try to bind body into different structs
+### 尝试将请求体绑定到不同的结构
 
-The normal methods for binding request body consumes `c.Request.Body` and they
-cannot be called multiple times.
+常规的方法绑定请求体是调用`c.Request.Body`, 但是它不能多次被调用
 
 ```go
 type formA struct {
@@ -2240,9 +2495,11 @@ func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
   // This c.ShouldBind consumes c.Request.Body and it cannot be reused.
+  // 使用c.ShoudBind消费c.Request.Body, 但是它只能调用一次
   if errA := c.ShouldBind(&objA); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
   // Always an error is occurred by this because c.Request.Body is EOF now.
+  //这里会报错,因为c.Request.Body已经被消费, 会返回文件结束符EOF
   } else if errB := c.ShouldBind(&objB); errB == nil {
     c.String(http.StatusOK, `the body should be formB`)
   } else {
@@ -2251,19 +2508,21 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-For this, you can use `c.ShouldBindBodyWith`.
+为了解决这个问题, 可以使用`c.ShouldBindBodyWith`方法.
 
 ```go
 func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
   // This reads c.Request.Body and stores the result into the context.
+  // c.ShouldBindBodyWith方法读取c.Request.Body,并且将结果存储到上下文
   if errA := c.ShouldBindBodyWith(&objA, binding.JSON); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
   // At this time, it reuses body stored in the context.
+  //再次调用c.ShouldBindBodyWith时, 可以从上下文中复用请求体内容
   } else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
     c.String(http.StatusOK, `the body should be formB JSON`)
-  // And it can accepts other formats
+  // And it can accepts other formats 也可以接受其他类型的绑定,比如XML
   } else if errB2 := c.ShouldBindBodyWith(&objB, binding.XML); errB2 == nil {
     c.String(http.StatusOK, `the body should be formB XML`)
   } else {
@@ -2272,17 +2531,14 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-* `c.ShouldBindBodyWith` stores body into the context before binding. This has
-a slight impact to performance, so you should not use this method if you are
-enough to call binding at once.
-* This feature is only needed for some formats -- `JSON`, `XML`, `MsgPack`,
-`ProtoBuf`. For other formats, `Query`, `Form`, `FormPost`, `FormMultipart`,
-can be called by `c.ShouldBind()` multiple times without any damage to
-performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
+* `c.ShouldBindBodyWith` 该方法在绑定前, 将请求体存储到gin上下文中, 所以这会对性能有轻微的影响, 所以如果你只打算绑定一次的时候, 不应该使用该方法.
+* 这种方式仅仅支持以下格式: `JSON`, `XML`, `MsgPack`,`ProtoBuf`. 对于其他格式, `Query`, `Form`, `FormPost`, `FormMultipart`, 可以重复使用`c.ShouldBind()`方法, 而不会带来类似的性能影响, 详见([#1341](https://github.com/gin-gonic/gin/pull/1341))
 
-### http2 server push
+### http2服务推送
 
-http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
+为了解决HTTP/1.X的网络资源利用率不够高, 延迟问题等, HTTP/2 引入了服务器推送机制来解决这些问题.
+
+http.Pusher需要**go1.8+**版本支持. 详见[golang博客](https://blog.golang.org/h2push).
 
 ```go
 package main
@@ -2294,6 +2550,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//定义html模板
 var html = template.Must(template.New("https").Parse(`
 <html>
 <head>
@@ -2312,8 +2569,9 @@ func main() {
 	r.SetHTMLTemplate(html)
 
 	r.GET("/", func(c *gin.Context) {
-		if pusher := c.Writer.Pusher(); pusher != nil {
+		if pusher := c.Writer.Pusher(); pusher != nil { //获取推送器
 			// use pusher.Push() to do server push
+			// 使用pusher.Push()方法执行服务端推送动作, 尝试推送app.js文件
 			if err := pusher.Push("/assets/app.js", nil); err != nil {
 				log.Printf("Failed to push: %v", err)
 			}
@@ -2328,18 +2586,20 @@ func main() {
 }
 ```
 
-### Define format for the log of routes
+### 定义路由日志格式
 
-The default log of routes is:
+默认路由日志如下:
 ```
 [GIN-debug] POST   /foo                      --> main.main.func1 (3 handlers)
 [GIN-debug] GET    /bar                      --> main.main.func2 (3 handlers)
 [GIN-debug] GET    /status                   --> main.main.func3 (3 handlers)
 ```
 
-If you want to log this information in given format (e.g. JSON, key values or something else), then you can define this format with `gin.DebugPrintRouteFunc`.
-In the example below, we log all routes with standard log package but you can use another log tools that suits of your needs.
+如果你想用给定的格式(如:JSON,键值对等)记录路由日志, 你可以使用`gin.DebugPrintRouteFunc`方法自定义日志格式, 下面的示例, 我们用日志log标准库记录路由器日志, 当然你也可以使用其他适合业务的日志工具. 
+
 ```go
+package main
+
 import (
 	"log"
 	"net/http"
@@ -2349,6 +2609,7 @@ import (
 
 func main() {
 	r := gin.Default()
+	//使用DebugPrintRouteFunc设置路由日志记录格式, 这里使用标准库log包记录请求方法/请求路径/控制器名/控制器链个数,
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
 		log.Printf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
@@ -2370,7 +2631,7 @@ func main() {
 }
 ```
 
-### Set and get a cookie
+### 设置和读取Cookie
 
 ```go
 import (
@@ -2384,11 +2645,12 @@ func main() {
     router := gin.Default()
 
     router.GET("/cookie", func(c *gin.Context) {
-
+				//读取Cookie
         cookie, err := c.Cookie("gin_cookie")
 
         if err != nil {
             cookie = "NotSet"
+          	//设置Cookie
             c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
         }
 
@@ -2400,9 +2662,9 @@ func main() {
 ```
 
 
-## Testing
+## 测试
 
-The `net/http/httptest` package is preferable way for HTTP testing.
+推荐使用`net/http/httptest` 包做HTTP测试.
 
 ```go
 package main
@@ -2421,7 +2683,7 @@ func main() {
 }
 ```
 
-Test for code example above:
+测试代码示例:
 
 ```go
 package main
@@ -2440,21 +2702,21 @@ func TestPingRoute(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ping", nil)
 	router.ServeHTTP(w, req)
-
+  //断言
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "pong", w.Body.String())
 }
 ```
 
-## Users
+## Gin框架用户
 
-Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
+其他优质的项目也使用[Gin](https://github.com/gin-gonic/gin)Web框架.
 
-* [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
-* [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
-* [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
-* [krakend](https://github.com/devopsfaith/krakend): Ultra performant API Gateway with middlewares.
-* [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
-* [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
-* [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+* [gorush](https://github.com/appleboy/gorush): 一个用GO实现的推送通知系统
+* [fnproject](https://github.com/fnproject/fn): 原生容器化, 无服务的跨云平台
+* [photoprism](https://github.com/photoprism/photoprism): 使用Go和Google的TensorFlow框架支持的个人照片管理
+* [krakend](https://github.com/devopsfaith/krakend): 带有中间件的极致高性能API网关
+* [picfit](https://github.com/thoas/picfit): 使用Go实现的一款图片编辑服务器
+* [brigade](https://github.com/brigadecore/brigade): 为Kubernetes服务的基于事件驱动的脚本
+* [dkron](https://github.com/distribworks/dkron): 分布式, 可靠的任务调度系统
 
