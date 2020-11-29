@@ -18,7 +18,7 @@
 
 本文地址: https://github.com/ssbandjl/golang-gin-doc-cn
 
-Gin是Golang写的Web框架, 功能类似另一个Go框架Martini[Martini](https://github.com/go-martini/martini)(暂停维护), Gin内部使用定制版本的[httprouter](https://github.com/julienschmidt/httprouter)(一款轻量级高性能HTTP请求路由器,或叫多路复用器), 速度是Martini的40倍, Gin拥有强大的性能,高效率,以及可扩展性, 所以赶快用起来吧!
+Gin是Golang写的Web框架, 功能类似另一个Go框架[Martini](https://github.com/go-martini/martini)(暂停维护), Gin内部使用定制版本的[httprouter](https://github.com/julienschmidt/httprouter)(一款轻量级高性能HTTP请求路由器,或叫多路复用器), 速度是Martini的40倍, Gin拥有强大的性能,高效率,以及可扩展性, 所以赶快用起来吧!
 
 ## 云原生
 
